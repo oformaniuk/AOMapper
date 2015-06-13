@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+VisualStudioVersion = 12.0.31101.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AOMapper", "AOMapper\AOMapper.csproj", "{0562F06A-36B9-4DBB-9205-EFE368362E55}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AOMapperTests", "AOMapperTests\AOMapperTests.csproj", "{8DAC1CA0-3FD8-4611-BCBA-8849E435F993}"
+EndProject
+Global
+	GlobalSection(CodealikeProperties) = postSolution
+		SolutionGuid = e6f4b135-52d7-492c-9ff4-232dd927aab3
+	EndGlobalSection
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{0562F06A-36B9-4DBB-9205-EFE368362E55}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0562F06A-36B9-4DBB-9205-EFE368362E55}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0562F06A-36B9-4DBB-9205-EFE368362E55}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0562F06A-36B9-4DBB-9205-EFE368362E55}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8DAC1CA0-3FD8-4611-BCBA-8849E435F993}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8DAC1CA0-3FD8-4611-BCBA-8849E435F993}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8DAC1CA0-3FD8-4611-BCBA-8849E435F993}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8DAC1CA0-3FD8-4611-BCBA-8849E435F993}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
