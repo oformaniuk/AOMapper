@@ -310,6 +310,7 @@ namespace AOMapper
         #endregion
 
         #region Type generation
+#if !PORTABLE
 
         /// <summary>
         /// Generates a new object from specified meta-data, including all properties and virtual properties.
@@ -410,8 +411,9 @@ namespace AOMapper
 
             return (T) result.UnderlyingObject;
         }
-
+#endif
         #endregion
+
 
         #region Gettes of the additional info
 
