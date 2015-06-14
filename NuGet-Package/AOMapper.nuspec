@@ -1,0 +1,28 @@
+﻿<?xml version="1.0"?>
+<package >
+  <metadata>
+    <id>AOMapper</id>
+    <version>1.0.3-dev1</version>
+    <title>AOMapper</title>
+    <authors>Oleh Formaniuk</authors>
+    <owners>Oleh Formaniuk</owners>
+    <licenseUrl>https://raw.githubusercontent.com/zjklee/AOMapper/master/LICENSE</licenseUrl>
+    <projectUrl>https://github.com/zjklee/AOMapper/</projectUrl>    
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>Object-to-object convention-based mapping tool</description>    
+    <copyright>Copyright (c) 2015 Oleh Formaniuk</copyright>
+    <tags>AOMapper Mapper object-to-object</tags>
+  </metadata>
+  <files>
+    <file src="**" exclude="**\*.dll;**\*.designer.cs;**\*.csproj;**\*.pdb;**\*.user;**\*.vspscc;bin\*.cs;bin\*.aspx;bin\*.config;bin\*.asax;bin\*.pubxml;**\*.nuproj;**\*.exe;**\*.number;**\**" />
+
+    <file src="..\AOMapper\bin\net4\Release\AOMapper.dll" target="lib\net40"/>
+    <file src="..\AOMapper\bin\net4\Release\AOMapper.XML" target="lib\net40"/>
+    <file src="..\AOMapper\bin\net45\Release\AOMapper.dll" target="lib\net45"/>
+    <file src="..\AOMapper\bin\net45\Release\AOMapper.XML" target="lib\net45"/>
+    <file src="..\AOMapper\bin\net4\Portable\Release\AOMapper.dll" target="lib\portable-net40+sl5"/>
+    <file src="..\AOMapper\bin\net4\Portable\Release\AOMapper.XML" target="lib\portable-net40+sl5"/>
+    <file src="..\AOMapper\bin\net45\Portable\Release\AOMapper.dll" target="lib\portable-net45+sl5"/>
+    <file src="..\AOMapper\bin\net45\Portable\Release\AOMapper.XML" target="lib\portable-net45+sl5"/>
+  </files>
+</package>

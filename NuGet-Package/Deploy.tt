@@ -1,0 +1,29 @@
+﻿<#@ template debug="false" hostspecific="True" language="C#" #>
+<#@ import namespace="System.IO" #>
+<#@ output extension=".bat" #>
+<#
+    string buildNumber;
+    try
+    {
+        //If we cannot find the file, the revision number is set to zero,
+        //so even if the file doesn't exists the generation will run anyway.
+        //NOTE: we suppose we're not messing with the generated file
+        using(var f = File.OpenText(Host.ResolvePath("AssemblyFileVersion.cs")))
+        {
+            //We're reading the previous revision number; in order to make the
+            //code as simple as we can, we're just going to rewrite it on the first row, commented.
+            //This is not elegant, but it's simple enough and quite effective.
+			f.ReadLine(); f.ReadLine(); f.ReadLine(); f.ReadLine();
+            buildNumber = f.ReadLine().Replace("[assembly: AssemblyInformationalVersion(\"","").Replace("\")]","");            
+        }
+    }catch
+    {     
+        buildNumber = "1.0.0-dev1"; 
+    }
+#>
+@echo off
+SETLOCAL ENABLEDELAYEDEXPANSION
+
+%1 pack %2
+%1 setApiKey 32de9932-cff8-4488-85b8-c82f33607c6d
+%1 push AOMapper.<#=buildNumber#>.nupkg

@@ -1,8 +1,31 @@
+﻿<#@ template debug="false" hostspecific="True" language="C#" #>
+<#@ import namespace="System.IO" #>
+<#@ output extension=".nuspec" #>
+<#
+    string buildNumber;
+    try
+    {
+        //If we cannot find the file, the revision number is set to zero,
+        //so even if the file doesn't exists the generation will run anyway.
+        //NOTE: we suppose we're not messing with the generated file
+        using(var f = File.OpenText(Host.ResolvePath("AssemblyFileVersion.cs")))
+        {
+            //We're reading the previous revision number; in order to make the
+            //code as simple as we can, we're just going to rewrite it on the first row, commented.
+            //This is not elegant, but it's simple enough and quite effective.
+			f.ReadLine(); f.ReadLine(); f.ReadLine(); f.ReadLine();
+            buildNumber = f.ReadLine().Replace("[assembly: AssemblyInformationalVersion(\"","").Replace("\")]","");            
+        }
+    }catch
+    {     
+        buildNumber = "1.0.0-dev1"; 
+    }
+#>
 <?xml version="1.0"?>
 <package >
   <metadata>
     <id>AOMapper</id>
-    <version>1.0.2.0</version>
+    <version><#=buildNumber#></version>
     <title>AOMapper</title>
     <authors>Oleh Formaniuk</authors>
     <owners>Oleh Formaniuk</owners>
@@ -14,7 +37,7 @@
     <tags>AOMapper Mapper object-to-object</tags>
   </metadata>
   <files>
-    <file src="**" exclude="**\*.dll;**\*.designer.cs;**\*.csproj;**\*.pdb;**\*.user;**\*.vspscc;bin\*.cs;bin\*.aspx;bin\*.config;bin\*.asax;bin\*.pubxml;**\*.nuproj;**\*.exe;**\*.number" />
+    <file src="**" exclude="**\*.dll;**\*.designer.cs;**\*.csproj;**\*.pdb;**\*.user;**\*.vspscc;bin\*.cs;bin\*.aspx;bin\*.config;bin\*.asax;bin\*.pubxml;**\*.nuproj;**\*.exe;**\*.number;**\**" />
 
     <file src="..\AOMapper\bin\net4\Release\AOMapper.dll" target="lib\net40"/>
     <file src="..\AOMapper\bin\net4\Release\AOMapper.XML" target="lib\net40"/>
