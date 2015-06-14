@@ -75,14 +75,16 @@
     <Content Include="NuGet.exe">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="TextTransform.exe">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PreBuildEvent>set textTemplatingPath="C:\Program Files (x86)\Common Files\Microsoft Shared\TextTemplating\$(VisualStudioVersion)\texttransform.exe"
-if %25textTemplatingPath%25=="\Microsoft Shared\TextTemplating\$(VisualStudioVersion)\texttransform.exe" set textTemplatingPath="%25CommonProgramFiles%25\Microsoft Shared\TextTemplating\$(VisualStudioVersion)\texttransform.exe"
+    <PreBuildEvent>set textTemplatingPath="$(ProjectDir)texttransform.exe"
 %25textTemplatingPath%25 "$(ProjectDir)AssemblyFileVersion.tt"
 %25textTemplatingPath%25 "$(ProjectDir)AOMapper.tt"
 %25textTemplatingPath%25 "$(ProjectDir)Deploy.tt"</PreBuildEvent>
