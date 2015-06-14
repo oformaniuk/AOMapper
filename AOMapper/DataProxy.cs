@@ -105,13 +105,9 @@ namespace AOMapper
             _type = proxy != null ? proxy.UnderlyingObject.GetType() : entity.GetType();
             var builder = MakeGenericMethod.MakeGenericMethod(_type);
 
-            //var initter = GetType().GetMethod("InitObjects", BindingFlags.Static | BindingFlags.NonPublic)
-            //    .MakeGenericMethod(_type);
-
             RawView = new Dictionary<string, object>();
             if (!AccessObjects.Value.ContainsKey(_type)) builder.Invoke(null, new object[] {_type, this});
             _accessObjects = AccessObjects.Value[_type];
-            //initter.Invoke(null, new object[] {_accessObjects});
 
             UnderlyingObject = entity;
 
@@ -127,15 +123,12 @@ namespace AOMapper
         {
             _type = type;                            
             var builder = MakeGenericMethod.MakeGenericMethod(_type);
-            //var initter = GetType().GetMethod("InitObjects", BindingFlags.Static | BindingFlags.NonPublic)
-            //    .MakeGenericMethod(_type);
 
             RawView = new Dictionary<string, object>();
             _type = type;
             if (!AccessObjects.Value.ContainsKey(_type))
                 builder.Invoke(null, new object[] {_type, this});
             _accessObjects = AccessObjects.Value[_type];               
-            //initter.Invoke(null, new object[] {_accessObjects});
 
             UnderlyingObject = default(TEntity);
 
@@ -151,13 +144,10 @@ namespace AOMapper
         {
             _type = typeof (TEntity);
             var builder = MakeGenericMethod.MakeGenericMethod(_type);
-            //var initter = GetType().GetMethod("InitObjects", BindingFlags.Static | BindingFlags.NonPublic)
-            //    .MakeGenericMethod(_type);
 
             RawView = new Dictionary<string, object>();
             if (!AccessObjects.Value.ContainsKey(_type)) builder.Invoke(null, new object[] {_type, this});
             _accessObjects = AccessObjects.Value[_type];
-            //initter.Invoke(null, new object[] {_accessObjects});
 
             if (!MethodsDictionary.Value.ContainsKey(_type))
                 MethodsDictionary.Value.Add(_type, new Dictionary<string, MethodProperty>());
@@ -494,7 +484,6 @@ namespace AOMapper
 
             foreach (var o in type.GetProperties())
             {
-                //BuildAccessor<T, TR>(type, o);
                 buildAccessor.MakeGeneric(type, o.PropertyType)
                     .Invoke(null, new object[]{type, o});
             }
