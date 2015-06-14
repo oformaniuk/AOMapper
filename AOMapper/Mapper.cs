@@ -198,7 +198,11 @@ namespace AOMapper
                 if (destinationObject == null || destinationObject.Equals(default(TDestination)))
                     destinationObject = Activator.CreateInstance<TDestination>();
 
-                foreach (var o in ((PropertyMap<TSource, TDestination>) Mapper.Maps[_args]).Destination
+                var mapContainer = Mapper.Maps[_args] as PropertyMap<TSource, TDestination>;
+                var destination = mapContainer.Destination;
+                var source = mapContainer.Source;
+
+                foreach (var o in destination.Where(o => source.Contains(o))
                     .Where(o => !additionalMaps.Any(k => k.Value.Path.Contains(o))))
                 {
                     _map.Destination[destinationObject, o] = _map.Source[sourceObject, o];
@@ -224,7 +228,11 @@ namespace AOMapper
                 if (destinationObject == null || destinationObject.Equals(default(TDestination)))
                     destinationObject = Activator.CreateInstance<TDestination>();
 
-                foreach (var o in ((PropertyMap<TSource, TDestination>)Mapper.Maps[_args]).Destination
+                var mapContainer = Mapper.Maps[_args] as PropertyMap<TSource, TDestination>;
+                var destination = mapContainer.Destination;
+                var source = mapContainer.Source;
+
+                foreach (var o in destination.Where(o => source.Contains(o))
                     .Where(o => !additionalMaps.Any(k => k.Value.Path.Contains(o))))
                 {
                     var value = _map.Source[sourceObject, o];
@@ -267,8 +275,13 @@ namespace AOMapper
 
                 var additionalMaps = _map.AdditionalMaps.ToList();
                 var dest = Activator.CreateInstance<TDestination>();
-                foreach (var o in ((PropertyMap<TSource, TDestination>)Mapper.Maps[_args]).Destination
-                    .Where(o => !additionalMaps.Any(k => k.Value.Path.Contains(o))))
+
+                var mapContainer = Mapper.Maps[_args] as PropertyMap<TSource, TDestination>;
+                var destination = mapContainer.Destination;
+                var source = mapContainer.Source;
+
+                foreach (var o in destination.Where(o => source.Contains(o))
+                    .Where(o => !additionalMaps.Any(k => k.Value.Path.Contains(o))) )
                 {
                     var destType = DetermineResultType(obj, new[] { o });
                     var destProp = DetermineResultProperty(obj, new[] { o });

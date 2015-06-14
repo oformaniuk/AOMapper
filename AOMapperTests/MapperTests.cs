@@ -57,6 +57,29 @@ namespace jetMapperTests
             Assert.AreEqual(customerViewMapper, customerViewManual);
         }
 
+        [TestMethod]
+        public void SimpleDirectMapTest()
+        {            
+            var mapBack = Mapper.Create<CustomerSimpleViewItem, Customer>();
+            var customerBlank = new CustomerSimpleViewItem();
+
+            var proxy = mapBack.GenerateProxy(customerBlank);
+            var customer = GetCustomerFromDB();
+            
+            proxy.SetValue(x => x.FirstName, customer.FirstName);
+            proxy.SetValue(x => x.LastName, customer.LastName);
+            proxy.SetValue(x => x.DateOfBirth, customer.DateOfBirth);
+
+            var customerViewManual = new CustomerSimpleViewItem()
+            {
+                FirstName = customer.FirstName,
+                LastName = customer.LastName,
+                DateOfBirth = customer.DateOfBirth,
+            };
+
+            Assert.AreEqual(customerBlank, customerViewManual);
+        }
+
         private List<Customer> _customers = new List<Customer>();
 
         [TestMethod]
