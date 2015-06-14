@@ -6,4 +6,9 @@ AOMapper is a simple and fast convention-based mapping tool designed to simplify
 
 ### Key features
 * Simple name-based object mapping
+* Advanced object mapping based on redefining paths
 * Direct object mapping
+***
+
+### Examples
+For examples see AOMapperTests
