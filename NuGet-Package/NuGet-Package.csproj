@@ -81,7 +81,7 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PreBuildEvent>set textTemplatingPath="%25CommonProgramFiles(x86)%25\Microsoft Shared\TextTemplating\$(VisualStudioVersion)\texttransform.exe"
+    <PreBuildEvent>set textTemplatingPath="C:\Program Files (x86)\Common Files\Microsoft Shared\TextTemplating\$(VisualStudioVersion)\texttransform.exe"
 if %25textTemplatingPath%25=="\Microsoft Shared\TextTemplating\$(VisualStudioVersion)\texttransform.exe" set textTemplatingPath="%25CommonProgramFiles%25\Microsoft Shared\TextTemplating\$(VisualStudioVersion)\texttransform.exe"
 %25textTemplatingPath%25 "$(ProjectDir)AssemblyFileVersion.tt"
 %25textTemplatingPath%25 "$(ProjectDir)AOMapper.tt"
