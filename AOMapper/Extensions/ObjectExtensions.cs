@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq.Expressions;
 
 namespace AOMapper.Extensions
 {    
@@ -38,6 +39,14 @@ namespace AOMapper.Extensions
                 result = enumerator.MoveNext() && enumerator.MoveNext();
             }
             return result;
+        }
+
+        public static string MemberName<T, TR>(this T o, Expression<Func<T, TR>> expression)
+        {
+            var body = expression.Body as MemberExpression;
+            if (body == null) throw new MissingMemberException();
+
+            return body.Member.Name;
         }
     }
 }

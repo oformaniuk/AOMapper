@@ -7,5 +7,5 @@ namespace AOMapper
         public string Path { get; set; }
         public TF Invoker { get; set; }
         public Delegate LastInvokeTarget { get; set; }
-    }
+    }    
 }

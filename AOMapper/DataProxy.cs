@@ -61,20 +61,20 @@ namespace AOMapper
 
         #region Helpers
 
-        protected static Action<T, object> ___getSetInvoker<T>(DataProxy<T> proxy, string name)
-        {
-            return proxy.GetSetter(name);
-        }
+        //protected static Action<T, object> ___getSetInvoker<T>(DataProxy<T> proxy, string name)
+        //{
+        //    return proxy.GetSetter(name);
+        //}
 
-        protected static Action<TNew, TRNew> _convertAction<T, TR, TNew, TRNew>(Action<T, TR> f)
-        {
-            return (o, o1) => f(o.As<T>(), o1.As<TR>());
-        }
+        //protected static Action<TNew, TRNew> _convertAction<T, TR, TNew, TRNew>(Action<T, TR> f)
+        //{
+        //    return (o, o1) => f(o.As<T>(), o1.As<TR>());
+        //}
 
-        protected static Func<T, TR> _convertFunc<T, TR>(Func<T, object> f)
-        {
-            return arg => (TR) f(arg);
-        }
+        //protected static Func<T, TR> _convertFunc<T, TR>(Func<T, object> f)
+        //{
+        //    return arg => (TR) f(arg);
+        //}
 
         #endregion
 
@@ -92,8 +92,8 @@ namespace AOMapper
         private readonly Dictionary<string, IAccessObject> _accessObjects;
         private readonly Type _type;
         private Dictionary<string, MethodProperty> _methods;
-        private static readonly MethodInfo MakeGenericMethod = typeof(DataProxy<TEntity>).GetMethod("BuildAccessors", BindingFlags.Static | BindingFlags.NonPublic);
-        private Dictionary<string, object> _virtualProperties = new Dictionary<string, object>();
+        private static readonly MethodInfo BuildAccessorsMethod = typeof(DataProxy<TEntity>).GetMethod("BuildAccessors", BindingFlags.Static | BindingFlags.NonPublic);
+        private readonly Dictionary<string, object> _virtualProperties = new Dictionary<string, object>();
 
         #endregion
 
@@ -102,11 +102,11 @@ namespace AOMapper
         public DataProxy(TEntity entity)
         {
             var proxy = entity as DataProxy<TEntity>;
-            _type = proxy != null ? proxy.UnderlyingObject.GetType() : entity.GetType();
-            var builder = MakeGenericMethod.MakeGenericMethod(_type);
+            _type = proxy != null ? proxy.UnderlyingObject.GetType() : entity.GetType();           
 
             RawView = new Dictionary<string, object>();
-            if (!AccessObjects.Value.ContainsKey(_type)) builder.Invoke(null, new object[] {_type, this});
+            if (!AccessObjects.Value.ContainsKey(_type)) 
+                BuildAccessorsMethod.MakeGenericMethod(_type).Invoke(null, new object[] {_type, this});
             _accessObjects = AccessObjects.Value[_type];
 
             UnderlyingObject = entity;
@@ -121,13 +121,12 @@ namespace AOMapper
 
         public DataProxy(Type type)
         {
-            _type = type;                            
-            var builder = MakeGenericMethod.MakeGenericMethod(_type);
+            _type = type;                                        
 
             RawView = new Dictionary<string, object>();
             _type = type;
             if (!AccessObjects.Value.ContainsKey(_type))
-                builder.Invoke(null, new object[] {_type, this});
+                BuildAccessorsMethod.MakeGenericMethod(_type).Invoke(null, new object[] {_type, this});
             _accessObjects = AccessObjects.Value[_type];               
 
             UnderlyingObject = default(TEntity);
@@ -142,11 +141,11 @@ namespace AOMapper
 
         public DataProxy()
         {
-            _type = typeof (TEntity);
-            var builder = MakeGenericMethod.MakeGenericMethod(_type);
+            _type = typeof (TEntity);            
 
             RawView = new Dictionary<string, object>();
-            if (!AccessObjects.Value.ContainsKey(_type)) builder.Invoke(null, new object[] {_type, this});
+            if (!AccessObjects.Value.ContainsKey(_type)) 
+                BuildAccessorsMethod.MakeGenericMethod(_type).Invoke(null, new object[] {_type, this});
             _accessObjects = AccessObjects.Value[_type];
 
             if (!MethodsDictionary.Value.ContainsKey(_type))
@@ -243,8 +242,8 @@ namespace AOMapper
         /// <returns></returns>
         public object this[TEntity obj, string name]
         {
-            get { return (_accessObjects[name]).GetGeneric<TEntity, object>(obj); }
-            set { (_accessObjects[name]).SetGeneric(obj, value); }
+            get { return _accessObjects[name].GetGeneric<TEntity, object>(obj); }
+            set { _accessObjects[name].SetGeneric(obj, value); }
         }
 
         /// <summary>
@@ -255,8 +254,8 @@ namespace AOMapper
         /// <returns></returns>
         public object this[object obj, string name]
         {
-            get { return (_accessObjects[name]).Get((TEntity) obj); }
-            set { (_accessObjects[name]).Set(obj, value); }
+            get { return _accessObjects[name].Get((TEntity) obj); }
+            set { _accessObjects[name].Set(obj, value); }
         }
 
         #endregion
@@ -403,7 +402,6 @@ namespace AOMapper
         }
 #endif
         #endregion
-
 
         #region Gettes of the additional info
 

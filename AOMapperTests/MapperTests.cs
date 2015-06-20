@@ -87,7 +87,7 @@ namespace jetMapperTests
         {                        
             var map = RunTimedFunction(Mapper.Create<Customer, CustomerSimpleViewItem>, "Map initialization: ");
 
-            for (int x = 1; x <= 100000; x *= 10)
+            for (int x = 1; x <= 1000000; x *= 10)
             {                
                 PopulateCustomers(x);
                 
@@ -166,7 +166,7 @@ namespace jetMapperTests
                 return o;
             }, "Map initialization: ");
 
-            for (int x = 1; x <= 100000; x *= 10)
+            for (int x = 1; x <= 1000000; x *= 10)
             {
                 PopulateCustomers(x);
 
