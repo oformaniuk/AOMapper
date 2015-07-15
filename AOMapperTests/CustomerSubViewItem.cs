@@ -2,6 +2,6 @@ namespace jetMapperTests
 {
     public class CustomerSubViewItem
     {
-        public string SubNameView {get;set;}
+        public string Name {get;set;}
     }
 }

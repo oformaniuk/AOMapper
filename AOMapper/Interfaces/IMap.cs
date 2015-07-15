@@ -8,6 +8,12 @@ namespace AOMapper.Interfaces
     public interface IMap
     {
         /// <summary>
+        /// Tries to automatically configure the map using name comparation
+        /// </summary>
+        /// <returns></returns>
+        IMap Auto();
+
+        /// <summary>
         /// Remaps the specified property according to specified path
         /// </summary>
         /// <param name="source"></param>
@@ -101,6 +107,12 @@ namespace AOMapper.Interfaces
     public interface IMap<TDestination> : IMap
     {
         /// <summary>
+        /// Tries to automatically configure the map using name comparation
+        /// </summary>
+        /// <returns></returns>
+        new IMap<TDestination> Auto();
+
+        /// <summary>
         /// Remaps the specified property according to specified path
         /// </summary>
         /// <param name="source"></param>
@@ -183,6 +195,12 @@ namespace AOMapper.Interfaces
     /// <typeparam name="TDestination"></typeparam>
     public interface IMap<TSource, TDestination> : IMap<TDestination>
     {
+        /// <summary>
+        /// Tries to automatically configure the map using name comparation
+        /// </summary>
+        /// <returns></returns>
+        new IMap<TSource, TDestination> Auto();
+
         /// <summary>
         /// Remaps the specified property according to specified path
         /// </summary>

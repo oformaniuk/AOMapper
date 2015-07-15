@@ -58,6 +58,24 @@ namespace jetMapperTests
         }
 
         [TestMethod]
+        public void SimpleMapAutoTest()
+        {
+            var map = Mapper.Create<Customer, CustomerSimpleViewItem>()
+                .Auto();
+
+            var customer = GetCustomerFromDB();
+            var customerViewMapper = map.Do(customer);
+            var customerViewManual = new CustomerSimpleViewItem()
+            {
+                FirstName = customer.FirstName,
+                LastName = customer.LastName,
+                DateOfBirth = customer.DateOfBirth,
+            };
+
+            Assert.AreEqual(customerViewMapper, customerViewManual);
+        }
+
+        [TestMethod]
         public void SimpleDirectMapTest()
         {            
             var mapBack = Mapper.Create<CustomerSimpleViewItem, Customer>();
@@ -132,7 +150,7 @@ namespace jetMapperTests
             map.RegisterGlobalMethod("f", func);
             map.RegisterGlobalMethod("n", n);
             map.Remap<string>("Sub/Name", "SubName");
-            map.Remap<string>("Sub/Name", "n/SubSubItem/SubNameView");
+            map.Remap<string>("Sub/Name", "n/SubSubItem/Name");
 
             var customer = GetCustomerFromDB();
             var customerViewMapper = map.Do(customer);
@@ -149,6 +167,46 @@ namespace jetMapperTests
         }
 
         [TestMethod]
+        public void MapAutoTest()
+        {            
+            var map = Mapper.Create<Customer, CustomerViewItem>()
+                .Auto();            
+
+            var customer = GetCustomerFromDB();
+            var customerViewMapper = map.Do(customer);
+            var customerViewManual = new CustomerViewItem()
+            {
+                FirstName = customer.FirstName,
+                LastName = customer.LastName,
+                DateOfBirth = customer.DateOfBirth,
+                NumberOfOrders = customer.NumberOfOrders,
+                SubName = customer.Sub.Name
+            };
+
+            Assert.AreEqual(customerViewMapper, customerViewManual);
+        }
+
+        [TestMethod]
+        public void MapAutoPerformanceTest()
+        {
+            var map = RunTimedFunction(() => Mapper.Create<Customer, CustomerViewItem>().Auto(), "Map (Auto) initialization: ");
+
+            for (int x = 1; x <= 1000000; x *= 10)
+            {
+                PopulateCustomers(x);
+
+                var mapperResult = RunTimedFunction(() => RunMapper(map), string.Format("Mapper with {0} elements: ", x));
+
+                var manualResult = RunTimedFunction(RunManual, string.Format("Manual with {0} elements: ", x));
+
+                CollectionAssert.AreEqual(mapperResult, manualResult);
+
+                Console.WriteLine();
+                Console.WriteLine();
+            }            
+        }
+
+        [TestMethod]
         public void MapPerformanceTest()
         {
             Func<CustomerSubClass, string> func = @class => @class.Name;
@@ -161,7 +219,7 @@ namespace jetMapperTests
                 o.RegisterGlobalMethod("f", func);
                 o.RegisterGlobalMethod("n", n);
                 o.Remap<string>("Sub/Name", "SubName");
-                o.Remap<string>("Sub/Name", "n/SubSubItem/SubNameView");
+                o.Remap<string>("Sub/Name", "n/SubSubItem/Name");
 
                 return o;
             }, "Map initialization: ");
@@ -194,7 +252,7 @@ namespace jetMapperTests
             map.RegisterGlobalMethod("f", func);
             map.RegisterGlobalMethod("n", n);
             map.Remap<string>("Sub.Name", "SubName");
-            map.Remap<string>("Sub.Name", "n.SubSubItem.SubNameView");
+            map.Remap<string>("Sub.Name", "n.SubSubItem.Name");
 
             var customer = GetCustomerFromDB();
             var customerViewMapper = map.Do(customer);

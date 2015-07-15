@@ -33,6 +33,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AOMapper-net45-portable", "
 		{7BC84DCE-9544-430D-BD2A-CA340BBAD309} = {7BC84DCE-9544-430D-BD2A-CA340BBAD309}
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProfilerTarget", "ProfilerTarget\ProfilerTarget.csproj", "{163347EE-0550-42C1-8648-0EC6C9478769}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -63,6 +65,10 @@ Global
 		{4D356E55-8D2A-4162-8CC7-CC5E00166262}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4D356E55-8D2A-4162-8CC7-CC5E00166262}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4D356E55-8D2A-4162-8CC7-CC5E00166262}.Release|Any CPU.Build.0 = Release|Any CPU
+		{163347EE-0550-42C1-8648-0EC6C9478769}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{163347EE-0550-42C1-8648-0EC6C9478769}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{163347EE-0550-42C1-8648-0EC6C9478769}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{163347EE-0550-42C1-8648-0EC6C9478769}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

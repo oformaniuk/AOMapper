@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using AOMapper.Extensions;
 using AOMapper.Helpers;
 using AOMapper.Interfaces;
@@ -15,11 +16,12 @@ namespace AOMapper
     {
         static Mapper()
         {
-            var mapperType = typeof(Mapper);
+            var mapperType = typeof (Mapper);
             ActionConverter = mapperType.GetMethod("_convertAction", BindingFlags.NonPublic | BindingFlags.Static);
             FuncConverter = mapperType.GetMethod("_convertFunc", BindingFlags.NonPublic | BindingFlags.Static);
             GetSourceInvoker = mapperType.GetMethod("GetSourceInvokeChain", BindingFlags.NonPublic | BindingFlags.Static);
             GetterCreator = mapperType.GetMethod("GetterBuilder", BindingFlags.NonPublic | BindingFlags.Static);
+            InitCreator = mapperType.GetMethod("InitBuilder", BindingFlags.NonPublic | BindingFlags.Static);
             SetterCreator = mapperType.GetMethod("___getSetInvoker", BindingFlags.NonPublic | BindingFlags.Static);
         }
 
@@ -27,10 +29,10 @@ namespace AOMapper
         /// Creates new or get cached objects map
         /// </summary>
         /// <returns></returns>
-        public static IMap<TS, TR> Create<TS, TR>()                
-        {            
+        public static IMap<TS, TR> Create<TS, TR>()
+        {
             return MapperInnerClass<TS, TR>.Map();
-        }
+        }        
 
         #region Fields
 
@@ -42,15 +44,30 @@ namespace AOMapper
 
         private static readonly MethodInfo GetterCreator;
 
+        private static readonly MethodInfo InitCreator;
+
         private static readonly Lazy<Dictionary<string, MethodProperty>> GlobalMethods =
-                    new Lazy<Dictionary<string, MethodProperty>>();
+            new Lazy<Dictionary<string, MethodProperty>>();
 
         private static readonly Dictionary<ArgArray, object> Maps
             = new Dictionary<ArgArray, object>();
 
         private static readonly MethodInfo SetterCreator;
-        
+
         private static readonly Type TypeOfObject = typeof (object);
+
+        private const string InitMethodName = "________InIt";
+
+        protected object InitializeValue(object obj, string prop)
+        {
+            var main = DataProxy.Create(obj.GetType());
+
+            if (main[obj, prop] == null && main.CanCreate(prop))
+                main[obj, prop] = Activator.CreateInstance(main.GetPropertyInfo(prop).PropertyType);
+
+            return obj;
+        }
+
         #endregion
 
         #region ConfigClass
@@ -64,11 +81,12 @@ namespace AOMapper
             {
                 IgnoreDefaultValues = false;
                 Separator = '/';
+                InitialyzeNullValues = true;
             }
 
             /// <summary>
             /// <para>Gets or sets a value indicating whether default values would be ignored during mapping.</para>
-            /// <para>Default: false</para>
+            /// <para>Default: False</para>
             /// </summary>
             /// <value>
             ///   <c>true</c> if default values should be ignored during mapping; otherwise, <c>false</c>.
@@ -79,6 +97,15 @@ namespace AOMapper
             /// Gets or sets the path separator.
             /// </summary>            
             public char Separator { get; set; }
+
+            /// <summary>
+            /// <para>Gets or sets a value indicating whether properties with null values should be initialized during mapping.</para>
+            /// <para>Default: True</para>
+            /// </summary>
+            /// <value>
+            /// <c>true</c> if null values should be initialized during mapping; otherwise, <c>false</c>.
+            /// </value>
+            public bool InitialyzeNullValues { get; set; }
         }
 
         #endregion
@@ -87,10 +114,10 @@ namespace AOMapper
 
         protected class MapperInnerClass<TSource, TDestination> : Mapper, IMap<TSource, TDestination>
         {
-
             #region Fields
 
             private static readonly TDestination DestinationDefault = Activator.CreateInstance<TDestination>();
+
             private static readonly Dictionary<ArgArray, MapperInnerClass<TSource, TDestination>> Mappers =
                 new Dictionary<ArgArray, MapperInnerClass<TSource, TDestination>>();
 
@@ -101,7 +128,97 @@ namespace AOMapper
             private PropertyMap<TSource, TDestination> _map;
             private Type _source;
 
-            #endregion            
+            private Dictionary<string, string> _destinationCodeTree;
+            private Dictionary<string, string> _sourceCodeTree;
+
+            #endregion
+
+            #region auto-mapping            
+
+            private MapperInnerClass<TSource, TDestination> Auto()
+            {
+                _destinationCodeTree = new Dictionary<string, string>();
+                GenerateCodeTree<TDestination>(_destinationCodeTree, _config.InitialyzeNullValues);
+                _sourceCodeTree = new Dictionary<string, string>();
+                GenerateCodeTree<TSource>(_sourceCodeTree, false);
+
+                CreateMapping();
+
+                return this;
+            }
+
+            IMap<TSource, TDestination> IMap<TSource, TDestination>.Auto()
+            {
+                return Auto();
+            }
+
+            IMap<TDestination> IMap<TDestination>.Auto()
+            {
+                return Auto();
+            }
+
+            IMap IMap.Auto()
+            {
+                return Auto();
+            }
+
+            private void CreateMapping()
+            {
+                foreach (var dest in _destinationCodeTree)
+                {
+                    foreach (var source in _sourceCodeTree)
+                    {
+                        if (dest.Key.Equals(source.Key) && !dest.Value.Equals(source.Value) ||
+                            (source.Value.Contains(_config.Separator.ToString()) &&
+                             dest.Key.Equals(source.Value.Replace(_config.Separator.ToString(), string.Empty))))
+                        {
+                            Remap(source.Value, dest.Value);
+                        }
+                    }
+                }
+            }
+
+            private void GenerateCodeTree<T>(Dictionary<string, string> dictionary, bool init)
+            {
+                var main = DataProxy.Create<T>();
+                var builder = new StringBuilder();
+
+                foreach (var prop in main.Where(o => main.CanGet(o) && main.CanSet(o)))
+                {
+                    dictionary.Add(prop, prop);
+
+                    builder.Append(prop);
+                    var propProxy = DataProxy.Create(main.GetPropertyInfo(prop).PropertyType);
+                    if (propProxy.Any())
+                    {
+                        if (init)
+                            builder.Replace(prop, string.Format("{0}{1}{2}", InitMethodName, _config.Separator, prop));
+                        BuildTree(propProxy, builder, dictionary, init);
+                    }
+                    builder.Clear();
+                }
+            }
+
+            private void BuildTree<T>(DataProxy<T> main, StringBuilder builder, Dictionary<string, string> dictionary,
+                bool init)
+            {
+                foreach (var prop in main.Where(o => main.CanGet(o) && main.CanSet(o)))
+                {
+                    builder.Append(_config.Separator);
+                    builder.Append(prop);
+                    dictionary.Add(prop, builder.ToString());
+                    var propProxy = DataProxy.Create(main.GetPropertyInfo(prop).PropertyType);
+
+                    if (propProxy.Any())
+                    {
+                        if (init)
+                            builder.Replace(prop, string.Format("{0}{1}{2}", InitMethodName, _config.Separator, prop));
+                        BuildTree(propProxy, builder, dictionary, init);
+                    }
+                }
+            }
+
+            #endregion
 
             #region Do
 
@@ -112,12 +229,16 @@ namespace AOMapper
             /// <returns></returns>
             public TDestination Do(TSource sourceObject)
             {
-                return _config.IgnoreDefaultValues ? PerformMappingIgnoreDefaults(sourceObject) : PerformMapping(sourceObject);
+                return _config.IgnoreDefaultValues
+                    ? PerformMappingIgnoreDefaults(sourceObject)
+                    : PerformMapping(sourceObject);
             }
 
             public TDestination Do(TSource sourceObject, TDestination dest)
             {
-                return _config.IgnoreDefaultValues ? PerformMappingIgnoreDefaults(sourceObject, dest) : PerformMapping(sourceObject, dest);
+                return _config.IgnoreDefaultValues
+                    ? PerformMappingIgnoreDefaults(sourceObject, dest)
+                    : PerformMapping(sourceObject, dest);
             }
 
             public TD Do<TS, TD>(TS obj, TD dest)
@@ -156,8 +277,8 @@ namespace AOMapper
 
             internal static MapperInnerClass<TSource, TDestination> Map()
             {
-                var s = typeof(TSource);
-                var t = typeof(TDestination);
+                var s = typeof (TSource);
+                var t = typeof (TDestination);
                 var args = new ArgArray(s, t);
                 if (Mappers.ContainsKey(args))
                 {
@@ -179,46 +300,24 @@ namespace AOMapper
                     {
                         Destination = destination,
                         Source = source,
-                        AdditionalMaps = new List<EditableKeyValuePair<MapObject<Func<TSource, object>>, MapObject<Action<TDestination, object>>>>()
+                        AdditionalMaps =
+                            new List
+                                <
+                                    EditableKeyValuePair
+                                        <MapObject<Func<TSource, object>>, MapObject<Action<TDestination, object>>>>()
                     };
 
                     Mapper.Maps.Add(args, mapper._map.Apply(o => o.Calculate()));
                 }
-                else mapper._map = (PropertyMap<TSource, TDestination>)Mapper.Maps[args];
+                else mapper._map = (PropertyMap<TSource, TDestination>) Mapper.Maps[args];
 
                 Mappers.Add(args, mapper);
 
                 return mapper;
             }
-            
-            private TDestination PerformMapping(TSource sourceObject, TDestination destinationObject = default(TDestination))
-            {                
-                if (destinationObject == null || destinationObject.Equals(default(TDestination)))
-                    destinationObject = Activator.CreateInstance<TDestination>();
-                
-                var destination = _map.Destination;
-                var source = _map.Source;
 
-                var nonRemapedDests = _map.DestinationNonReMapedProperties;
-                for (int index = 0; index < nonRemapedDests.Length; index++)
-                {
-                    var o = nonRemapedDests[index];
-                    destination[destinationObject, o] = source[sourceObject, o];
-                }                
-
-                var additionalMaps = _map.AdditionalMaps;
-                for (int index = 0; index < additionalMaps.Count; index++)
-                {
-                    var map = additionalMaps[index];                    
-
-                    var sourceValue = map.Key.Invoker(sourceObject);
-                    map.Value.Invoker(destinationObject, sourceValue);
-                }                
-
-                return destinationObject;
-            }
-
-            private TDestination PerformMappingIgnoreDefaults(TSource sourceObject, TDestination destinationObject = default (TDestination))
+            private TDestination PerformMapping(TSource sourceObject,
+                TDestination destinationObject = default(TDestination))
             {
                 if (destinationObject == null || destinationObject.Equals(default(TDestination)))
                     destinationObject = Activator.CreateInstance<TDestination>();
@@ -229,13 +328,41 @@ namespace AOMapper
                 var nonRemapedDests = _map.DestinationNonReMapedProperties;
                 for (int index = 0; index < nonRemapedDests.Length; index++)
                 {
-                    var o = nonRemapedDests[index];                    
+                    var o = nonRemapedDests[index];
+                    destination[destinationObject, o] = source[sourceObject, o];
+                }
+
+                var additionalMaps = _map.AdditionalMaps;
+                for (int index = 0; index < additionalMaps.Count; index++)
+                {
+                    var map = additionalMaps[index];
+
+                    var sourceValue = map.Key.Invoker(sourceObject);
+                    map.Value.Invoker(destinationObject, sourceValue);
+                }
+
+                return destinationObject;
+            }
+
+            private TDestination PerformMappingIgnoreDefaults(TSource sourceObject,
+                TDestination destinationObject = default (TDestination))
+            {
+                if (destinationObject == null || destinationObject.Equals(default(TDestination)))
+                    destinationObject = Activator.CreateInstance<TDestination>();
+
+                var destination = _map.Destination;
+                var source = _map.Source;
+
+                var nonRemapedDests = _map.DestinationNonReMapedProperties;
+                for (int index = 0; index < nonRemapedDests.Length; index++)
+                {
+                    var o = nonRemapedDests[index];
 
                     var value = source[sourceObject, o];
                     if (value != null && !value.Equals(default(TDestination)))
                     {
                         destination[destinationObject, o] = value;
-                    } 
+                    }
                 }
 
                 var additionalMaps = _map.AdditionalMaps;
@@ -247,11 +374,11 @@ namespace AOMapper
                     if (sourceValue != null && !sourceValue.Equals(sourceValue.GetType().GetDefault()))
                     {
                         map.Value.Invoker(destinationObject, sourceValue);
-                    }                      
+                    }
                 }
 
-                return destinationObject;                
-            }              
+                return destinationObject;
+            }
 
             #region IMap<,>
 
@@ -263,26 +390,28 @@ namespace AOMapper
             public MappingObject<TSource, TDestination> GenerateProxy(TSource obj)
             {
                 var sourceType = obj.GetType();
-                var getter = typeof(Func<,>);
-                var setter = typeof(Action<,>);
+                var getter = typeof (Func<,>);
+                var setter = typeof (Action<,>);
 
                 var metadatas = new List<FieldMetadata>();
 
-                var additionalMaps = _map.AdditionalMaps;                       
-                
+                var additionalMaps = _map.AdditionalMaps;
+
                 var nonRemapedDests = _map.DestinationNonReMapedProperties;
                 for (int index = 0; index < nonRemapedDests.Length; index++)
                 {
-                    var o = nonRemapedDests[index];   
+                    var o = nonRemapedDests[index];
 
-                    var destType = DetermineResultType(obj, new[] { o });
-                    var destProp = DetermineResultProperty(obj, new[] { o });
+                    var destType = DetermineResultType(obj, new[] {o});
+                    var destProp = DetermineResultProperty(obj, new[] {o});
                     metadatas.Add(new FieldMetadata
                     {
                         FieldName = o,
                         FieldType = destType,
-                        MappedPropertyGetter = Delegate.CreateDelegate(getter.MakeGenericType(sourceType, destType), destProp[0]),
-                        MappedPropertySetter = Delegate.CreateDelegate(setter.MakeGenericType(sourceType, destType), destProp[1]),
+                        MappedPropertyGetter =
+                            Delegate.CreateDelegate(getter.MakeGenericType(sourceType, destType), destProp[0]),
+                        MappedPropertySetter =
+                            Delegate.CreateDelegate(setter.MakeGenericType(sourceType, destType), destProp[1]),
                         DeclareType = sourceType,
                         Object = obj
                     });
@@ -302,14 +431,16 @@ namespace AOMapper
                     {
                         FieldName = destinationPath.Last(),
                         FieldType = destType,
-                        MappedPropertyGetter = Delegate.CreateDelegate(getter.MakeGenericType(sType, destType), destProp[0]),
-                        MappedPropertySetter = Delegate.CreateDelegate(setter.MakeGenericType(sType, destType), destProp[1]),
+                        MappedPropertyGetter =
+                            Delegate.CreateDelegate(getter.MakeGenericType(sType, destType), destProp[0]),
+                        MappedPropertySetter =
+                            Delegate.CreateDelegate(setter.MakeGenericType(sType, destType), destProp[1]),
                         DeclareType = sType,
                         Object = o
                     });
                 }
 
-                return new MappingObject<TSource, TDestination>(metadatas) { UnderlyingObject = obj };
+                return new MappingObject<TSource, TDestination>(metadatas) {UnderlyingObject = obj};
             }
 
             IMap<TSource, TDestination> IMap<TSource, TDestination>.RegisterDestinationMethod<T>(string name, T method)
@@ -329,11 +460,12 @@ namespace AOMapper
                 RegisterMethod(name, method);
                 return this;
             }
+
             IMap<TSource, TDestination> IMap<TSource, TDestination>.RegisterSourceMethod<T>(string name, T method)
             {
                 RegisterSourceMethod(name, method);
                 return this;
-            }            
+            }
 
             IMap<TSource, TDestination> IMap<TSource, TDestination>.Remap(string source, string destination)
             {
@@ -346,7 +478,7 @@ namespace AOMapper
                 Remap<TR>(source, destination);
                 return this;
             }
-            
+
             #endregion
 
             #region IMap<>            
@@ -381,7 +513,7 @@ namespace AOMapper
 
             TDestination IMap<TDestination>.Do(object obj)
             {
-                return Do((TSource)obj);
+                return Do((TSource) obj);
             }
 
             IMap<TDestination> IMap<TDestination>.Remap<TR>(string source, string destination)
@@ -395,7 +527,7 @@ namespace AOMapper
                 Remap(source, destination);
                 return this;
             }
-            
+
             #endregion
 
             #region IMap
@@ -412,9 +544,9 @@ namespace AOMapper
             /// <returns></returns>
             MappingObject IMap.GenerateProxy(object obj)
             {
-                return GenerateProxy((TSource)obj);
+                return GenerateProxy((TSource) obj);
             }
-            
+
             public IMap Remap<TR>(string source, string destination)
             {
                 return RegisterAdditionalMap<TR>(source, destination);
@@ -422,12 +554,13 @@ namespace AOMapper
 
             public IMap Remap(string source, string destination)
             {
-                this.GetType().GetMethod("_remapInner", BindingFlags.NonPublic)
+                this.GetType().GetMethod("RegisterAdditionalMap", BindingFlags.NonPublic | BindingFlags.Instance)
                     .MakeGeneric(DetermineResultType(DestinationDefault, destination.Split(_config.Separator)))
-                    .Invoke(this, new object[] { source, destination });
+                    .Invoke(this, new object[] {source, destination});
 
                 return this;
             }
+
             #endregion
 
             #region Method registration
@@ -489,8 +622,8 @@ namespace AOMapper
                 {
                     propertyType = xc.Methods[firstPath].Info.ReturnType;
                     @delegate = FuncConverter
-                        .MakeGeneric(typeof(T), propertyType)
-                        .Invoke(null, new object[] { xc.Methods[firstPath].Delegate });
+                        .MakeGeneric(typeof (T), propertyType)
+                        .Invoke(null, new object[] {xc.Methods[firstPath].Delegate});
                 }
                 else
                 {
@@ -510,13 +643,15 @@ namespace AOMapper
                     else if (p.ContainsMethod(s)) target = p.Methods[s].Info.ReturnType;
                     else target = GlobalMethods.Value[s].Info.ReturnType;
 
-                    var pair = (KeyValuePair<Type, Delegate>)GetterCreator.MakeGenericMethod(typeof(T), propertyType, target)
-                        .Invoke(null, new object[] { s, new KeyValuePair<Type, Delegate>(propertyType, @delegate as Delegate) });
+                    var pair =
+                        (KeyValuePair<Type, Delegate>) GetterCreator.MakeGenericMethod(typeof (T), propertyType, target)
+                            .Invoke(null,
+                                new object[] {s, new KeyValuePair<Type, Delegate>(propertyType, @delegate as Delegate)});
                     @delegate = pair.Value;
                     propertyType = pair.Key;
                 }
 
-                return (Func<T, TR>)@delegate;
+                return (Func<T, TR>) @delegate;
             }
 
             private Action<T, TR> GetDestinationInvokeChain<T, TR>(string path, T obj, out Delegate @out)
@@ -536,56 +671,91 @@ namespace AOMapper
                     return setter;
                 }
 
-                var firstPath = paths.First();
-
+                int skip = 1;
                 object f = null;
 
+                var t = typeof (T);
+                var firstPath = paths.First();
+                if (firstPath.Equals(InitMethodName))
+                {
+                    skip++;
+                    f = InitCreator.MakeGenericMethod(t, t)
+                        .Invoke(null, new object[] {f, paths[1]});
+                }
+
+                firstPath = paths.First(y => !y.Equals(InitMethodName));
+
+                object fe = null;
                 if (xc.ContainsProperty(firstPath))
                 {
                     propertyType = xc.GetPropertyInfo(firstPath).PropertyType;
-                    f = xc.GetReflectedGetter(firstPath, propertyType);
+                    fe = xc.GetReflectedGetter(firstPath, propertyType);
                 }
                 else if (xc.ContainsMethod(firstPath))
                 {
                     propertyType = xc.Methods[firstPath].Info.ReturnType;
-                    f = FuncConverter
-                        .MakeGeneric(typeof(T), propertyType)
-                        .Invoke(null, new object[] { xc.Methods[firstPath].Delegate });
+                    fe = FuncConverter
+                        .MakeGeneric(typeof (T), propertyType)
+                        .Invoke(null, new object[] {xc.Methods[firstPath].Delegate});
                 }
                 else
                 {
                     var method = GlobalMethods.Value[firstPath];
-                    f = method.Delegate;
+                    fe = method.Delegate;
                     propertyType = method.Info.ReturnType;
                 }
 
-                KeyValuePair<Type, Delegate> ff = new KeyValuePair<Type, Delegate>(propertyType, f as Delegate);
-                foreach (var s in paths.Skip(1))
+                if (f != null)
                 {
+                    f = typeof (Mapper).GetMethod("__compose", BindingFlags.NonPublic | BindingFlags.Static)
+                        .MakeGeneric(t, t, propertyType)
+                        .Invoke(null, new[] {f, fe});
+                }
+                else
+                {
+                    f = fe;
+                }
+
+                int index = skip;
+                KeyValuePair<Type, Delegate> ff = new KeyValuePair<Type, Delegate>(propertyType, (Delegate) f);
+                foreach (var s in paths.Skip(skip))
+                {
+                    if (s.Equals(InitMethodName))
+                    {
+                        string prop = paths[index];
+
+                        f = InitCreator.MakeGenericMethod(typeof (T), propertyType, propertyType)
+                            .Invoke(null, new object[] {f, prop});
+
+                        continue;
+                    }
+
                     Type target;
                     var p = DataProxy.Create(propertyType);
                     if (p.ContainsProperty(s)) target = p.GetPropertyInfo(s).PropertyType;
                     else if (p.ContainsMethod(s)) target = p.Methods[s].Info.ReturnType;
                     else target = GlobalMethods.Value[s].Info.ReturnType;
 
-                    ff = (KeyValuePair<Type, Delegate>)GetterCreator.MakeGenericMethod(typeof(T), propertyType, target)
-                        .Invoke(null, new object[] { s, new KeyValuePair<Type, Delegate>(propertyType, f as Delegate) });
+                    ff = (KeyValuePair<Type, Delegate>) GetterCreator.MakeGenericMethod(t, propertyType, target)
+                        .Invoke(null, new object[] {s, new KeyValuePair<Type, Delegate>(propertyType, (Delegate) f)});
                     f = ff.Value;
                     propertyType = ff.Key;
+
+                    index++;
                 }
 
-                var type = typeof(DataProxy<>);
-                Type[] typeArgs = { ff.Key };                
+                var type = typeof (DataProxy<>);
+                Type[] typeArgs = {ff.Key};
                 object o = Activator.CreateInstance(type.MakeGenericType(typeArgs));
-                var m = SetterCreator.MakeGeneric(ff.Key, typeof(TR))
-                    .Invoke(null, new object[] { o, propertyName }) as Delegate;
+                var m = (Delegate) SetterCreator.MakeGeneric(ff.Key, typeof (TR))
+                    .Invoke(null, new object[] {o, propertyName});
                 var minfo = m.Method;
 
                 var a = ActionConverter
-                    .MakeGeneric(propertyType, minfo.GetParameters()[0].ParameterType, TypeOfObject, typeof(TR))
-                    .Invoke(null, new object[] { m });
-                @out = a as Delegate;
-                return (f as Func<T, object>).Compose(a as Action<object, TR>);
+                    .MakeGeneric(propertyType, minfo.GetParameters()[0].ParameterType, TypeOfObject, typeof (TR))
+                    .Invoke(null, new object[] {m});
+                @out = (Delegate) a;
+                return ((Func<T, object>) f).Compose((Action<object, TR>) a);
             }
 
             private IMap RegisterAdditionalMap<TR>(string source, string destination)
@@ -595,21 +765,26 @@ namespace AOMapper
                     if (!_map.AdditionalMaps.Any(o => o.Value.Path.Equals(destination)))
                     {
                         Delegate tempSource;
-                        _map.AdditionalMaps.Add(new EditableKeyValuePair<MapObject<Func<TSource, object>>, MapObject<Action<TDestination, object>>>
+                        _map.AdditionalMaps.Add(new EditableKeyValuePair
+                            <MapObject<Func<TSource, object>>, MapObject<Action<TDestination, object>>>
                             (new MapObject<Func<TSource, object>>
                             {
                                 Path = source,
-                                Invoker = GetSourceInvokeChain<TSource, TR>(SourceDefault, source.Split(_config.Separator).Select(x => x.Trim()).ToArray(), out tempSource)
-                                    .Convert<TSource, TR, TSource, object>(),
+                                Invoker =
+                                    GetSourceInvokeChain<TSource, TR>(SourceDefault,
+                                        source.Split(_config.Separator).Select(x => x.Trim()).ToArray(), out tempSource)
+                                        .Convert<TSource, TR, TSource, object>(),
                                 LastInvokeTarget = tempSource
                             },
-                            new MapObject<Action<TDestination, object>>
-                            {
-                                Path = destination,
-                                Invoker = GetDestinationInvokeChain<TDestination, TR>(destination, DestinationDefault, out tempSource).Convert<TDestination, TR, TDestination, Object>(),
-                                LastInvokeTarget = tempSource
-                            }
-                        ));
+                                new MapObject<Action<TDestination, object>>
+                                {
+                                    Path = destination,
+                                    Invoker =
+                                        GetDestinationInvokeChain<TDestination, TR>(destination, DestinationDefault,
+                                            out tempSource).Convert<TDestination, TR, TDestination, Object>(),
+                                    LastInvokeTarget = tempSource
+                                }
+                            ));
                         _map.Calculate();
                     }
                     else _map.AdditionalMaps.Single(o => o.Value.Path.Equals(destination)).Key.Path = source;
@@ -619,7 +794,7 @@ namespace AOMapper
 
             private MethodInfo[] DetermineResultProperty<T>(T objType, string[] paths)
             {
-                var proxy = DataProxy.Create((object)objType);
+                var proxy = DataProxy.Create((object) objType);
                 string lastPath = paths.Last();
 
                 foreach (var s in paths)
@@ -636,42 +811,43 @@ namespace AOMapper
                 if (proxy.ContainsProperty(lastPath))
                 {
                     var info = proxy.GetPropertyInfo(lastPath);
-                    return new[] { info.GetGetMethod(), info.GetSetMethod() };
+                    return new[] {info.GetGetMethod(), info.GetSetMethod()};
                 }
                 else if (proxy.ContainsMethod(lastPath))
                 {
                     var info = proxy.Methods[lastPath].Info;
-                    return new[] { info, info };
+                    return new[] {info, info};
                 }
                 else
                 {
                     var info = GlobalMethods.Value[lastPath].Info;
-                    return new[] { info, info };
+                    return new[] {info, info};
                 }
             }
 
             private Type DetermineResultType<T>(T objType, string[] paths)
             {
                 Type target = null;
-                var proxy = DataProxy.Create((object)objType);
+                var proxy = DataProxy.Create((object) objType);
                 string lastPath = paths.Last();
 
-                foreach (var s in paths)
+                foreach (var s in paths.Where(o => !o.Equals(InitMethodName)))
                 {
                     if (proxy.ContainsProperty(s)) target = proxy.GetPropertyInfo(s).PropertyType;
                     else if (proxy.ContainsMethod(s)) target = proxy.Methods[s].Info.ReturnType;
                     else target = GlobalMethods.Value[s].Info.ReturnType;
 
-                    if(s != lastPath)
+                    if (s != lastPath)
                         proxy = DataProxy.Create(target);
                 }
-                
+
                 return target;
             }
+
             #endregion
         }
 
-        #endregion        
+        #endregion
 
         #region Helpers
 
@@ -682,21 +858,38 @@ namespace AOMapper
             Func<T, TR> tempValue = null;
             var xx = DataProxy.Create<T>();
             if (xx.ContainsProperty(firstPath))
-            {                
-                tempValue = xx.GetGetterGeneric<TR>(firstPath);                
+            {
+                tempValue = xx.GetGetterGeneric<TR>(firstPath);
             }
             else if (xx.ContainsMethod(firstPath))
             {
                 var method = xx.Methods[firstPath];
-                tempValue = _convertDelegateToFunc<T, TR>(method.Delegate);                
+                tempValue = _convertDelegateToFunc<T, TR>(method.Delegate);
             }
             else if (GlobalMethods.Value.ContainsKey(firstPath))
             {
                 var method = GlobalMethods.Value[firstPath];
-                tempValue = method.Delegate as Func<T, TR>;                
+                tempValue = method.Delegate as Func<T, TR>;
             }
 
-            return new KeyValuePair<Type, Delegate>(tempValue.Method.ReturnType, (func.Value as Func<TF, T>).Compose(tempValue));
+            return new KeyValuePair<Type, Delegate>(tempValue.Method.ReturnType,
+                (func.Value as Func<TF, T>).Compose(tempValue));
+        }
+
+        private static Delegate InitBuilder<TF, T>(Delegate func, string prop)
+        {
+            Func<T, T> initFunc = targetObj =>
+            {
+                var proxy = DataProxy.Create<T>();
+
+                proxy[targetObj, prop] = Activator.CreateInstance(proxy.GetPropertyInfo(prop).PropertyType);
+
+                return targetObj;                
+            };
+
+            if (func == null) return initFunc;
+
+            return (func as Func<TF, T>).Compose(initFunc);
         }
 
         private static Action<T, TR> ___getSetInvoker<T, TR>(DataProxy<T> proxy, string name)
@@ -714,10 +907,16 @@ namespace AOMapper
             return arg => (f as Func<T, TR>)(arg);
         }
 
+        private static Func<T, TRNew> __compose<T, TR, TRNew>(Func<T, TR> f1, Func<TR, TRNew> f2)
+        {
+            return f1.Compose(f2);
+        }
+
         private static Func<T, TR> _convertFunc<T, TR>(Func<T, object> f)
         {
-            return arg => (TR)f(arg);
+            return arg => (TR) f(arg);
         }
+
         #endregion
     }
 }

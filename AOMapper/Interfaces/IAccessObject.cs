@@ -17,6 +17,7 @@ namespace AOMapper.Interfaces
         void SetGeneric<T, TR>(T obj, TR value);
         bool CanSet { get; }
         bool CanGet { get; }
+        bool CanCreate { get; }
 
         PropertyInfo PropertyInfo { get; }
     }

@@ -12,10 +12,12 @@ namespace AOMapper
             get { return Getter != null; }
         }
 
+        public bool CanCreate { get; set; }
+
         public bool CanSet
         {
             get { return Setter != null; }
-        }
+        }        
 
         public PropertyInfo PropertyInfo { get; set; }
         public Func<T, TResult> Getter { get; set; }

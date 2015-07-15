@@ -459,6 +459,21 @@ namespace AOMapper
             return _accessObjects[name].GetSetter<TEntity, TR>();
         }
 
+        public bool CanGet(string name)
+        {
+            return _accessObjects[name].CanGet;
+        }
+
+        public bool CanSet(string name)
+        {
+            return _accessObjects[name].CanSet;
+        }
+
+        public bool CanCreate(string name)
+        {
+            return _accessObjects[name].CanCreate;
+        }
+
         #endregion                 
         
         #region Helpers
@@ -480,8 +495,8 @@ namespace AOMapper
             AccessObjects.Value.Add(type, new Dictionary<string, IAccessObject>());
             var buildAccessor = typeof(DataProxy<TEntity>).GetMethod("BuildAccessor", BindingFlags.NonPublic | BindingFlags.Static);
 
-            foreach (var o in type.GetProperties())
-            {
+            foreach (var o in type.GetProperties().Where(o => o.CanRead && o.CanWrite))
+            {                
                 buildAccessor.MakeGeneric(type, o.PropertyType)
                     .Invoke(null, new object[]{type, o});
             }
@@ -495,7 +510,8 @@ namespace AOMapper
                 {
                     PropertyInfo = o,
                     Getter = o.CanRead ? GetValueGetter<T, TR>(o, type) : null,
-                    Setter = o.CanWrite ? GetValueSetter<T, TR>(o, type) : null
+                    Setter = o.CanWrite ? GetValueSetter<T, TR>(o, type) : null,
+                    CanCreate = o.PropertyType.GetConstructor(new Type[0]) != null
                 };
             }
             else if (!AccessObjects.Value[type].ContainsKey(o.Name))
@@ -504,7 +520,8 @@ namespace AOMapper
                 {
                     PropertyInfo = o,
                     Getter = o.CanRead ? GetValueGetter<T, TR>(o, type) : null,
-                    Setter = o.CanWrite ? GetValueSetter<T, TR>(o, type) : null
+                    Setter = o.CanWrite ? GetValueSetter<T, TR>(o, type) : null,
+                    CanCreate = o.PropertyType.GetConstructor(new Type[0]) != null
                 });
             }
         }
