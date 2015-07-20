@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Reflection;
 using System.Text;
 using AOMapper;
 using AOMapper.Extensions;
@@ -33,6 +34,7 @@ namespace jetMapperTests
         [TestMethod]
         public void CreateMapTest()
         {
+            Mapper.Clear();
             var first = Mapper.Create<Customer, CustomerSimpleViewItem>();
             var second = Mapper.Create<CustomerSimpleViewItem, Customer>();
             var third = Mapper.Create<Customer, CustomerSimpleViewItem>();
@@ -44,6 +46,7 @@ namespace jetMapperTests
         [TestMethod]
         public void SimpleMapTest()
         {
+            Mapper.Clear();
             var map = Mapper.Create<Customer, CustomerSimpleViewItem>();
             var customer = GetCustomerFromDB();
             var customerViewMapper = map.Do(customer);
@@ -60,6 +63,7 @@ namespace jetMapperTests
         [TestMethod]
         public void SimpleMapAutoTest()
         {
+            Mapper.Clear();
             var map = Mapper.Create<Customer, CustomerSimpleViewItem>()
                 .Auto();
 
@@ -77,7 +81,8 @@ namespace jetMapperTests
 
         [TestMethod]
         public void SimpleDirectMapTest()
-        {            
+        {
+            Mapper.Clear();
             var mapBack = Mapper.Create<CustomerSimpleViewItem, Customer>();
             var customerBlank = new CustomerSimpleViewItem();
 
@@ -96,13 +101,14 @@ namespace jetMapperTests
             };
 
             Assert.AreEqual(customerBlank, customerViewManual);
-        }
+        }        
 
         private List<Customer> _customers = new List<Customer>();
 
         [TestMethod]
         public void SimpleMapPerformanceTest()
-        {                        
+        {
+            Mapper.Clear();       
             var map = RunTimedFunction(Mapper.Create<Customer, CustomerSimpleViewItem>, "Map initialization: ");
 
             for (int x = 1; x <= 1000000; x *= 10)
@@ -123,6 +129,7 @@ namespace jetMapperTests
         [TestMethod]
         public void SimpleMapDefaultIgnoreTest()
         {
+            Mapper.Clear();
             var map = Mapper.Create<Customer, CustomerSimpleViewItem>()
                 .ConfigMap(config => config.IgnoreDefaultValues = true);                
 
@@ -142,6 +149,7 @@ namespace jetMapperTests
         [TestMethod]
         public void MapTest()
         {
+            Mapper.Clear();
             Func<CustomerSubClass, string> func = @class => @class.Name;
             Func<CustomerViewItem, CustomerViewItem> n = item =>
                 item.Apply(o => o.SubSubItem = new CustomerSubViewItem());
@@ -167,8 +175,139 @@ namespace jetMapperTests
         }
 
         [TestMethod]
+        public void MapClearTest()
+        {
+            Mapper.Clear();
+            Func<CustomerSubClass, string> func = @class => @class.Name;
+            Func<CustomerViewItem, CustomerViewItem> n = item =>
+                item.Apply(o => o.SubSubItem = new CustomerSubViewItem());
+
+            var map = Mapper.Create<Customer, CustomerViewItem>();
+            map.RegisterGlobalMethod("f", func);
+            map.RegisterGlobalMethod("n", n);
+            map.Remap<string>("Sub/Name", "SubName");
+            map.Remap<string>("Sub/Name", "n/SubSubItem/Name");
+
+            var customer = GetCustomerFromDB();
+            var customerViewMapper = map.Do(customer);
+            var customerViewManual = new CustomerViewItem()
+            {
+                FirstName = customer.FirstName,
+                LastName = customer.LastName,
+                DateOfBirth = customer.DateOfBirth,
+                NumberOfOrders = customer.NumberOfOrders,
+                SubName = customer.Sub.Name
+            };
+
+            Mapper.Clear();
+
+            var map2 = Mapper.Create<Customer, CustomerViewItem>();
+            map.RegisterGlobalMethod("f", func);
+            map.RegisterGlobalMethod("n", n);
+            map.Remap<string>("Sub/Name", "SubName");
+            map.Remap<string>("Sub/Name", "n/SubSubItem/Name");
+
+            Assert.AreNotEqual(map, map2);
+        }
+
+        [TestMethod]
+        public void MapMethodMissingTest()
+        {
+            Mapper.Clear();
+            Func<CustomerSubClass, string> func = @class => @class.Name;
+            Func<CustomerViewItem, CustomerViewItem> n = item =>
+                item.Apply(o => o.SubSubItem = new CustomerSubViewItem());
+
+            try
+            {
+                Mapper.Clear();
+                var map = Mapper.Create<Customer, CustomerViewItem>();
+                map.RegisterGlobalMethod("f", func);
+                //map.RegisterGlobalMethod("n", n);
+                map.Remap<string>("Sub/Name", "SubName");
+                map.Remap<string>("Sub/Name", "n/SubSubItem/Name");
+
+                var customer = GetCustomerFromDB();
+            
+                var customerViewMapper = map.Do(customer);
+                Assert.Fail("Exception was not thrown");
+            }
+            catch (InvalidOperationException e)
+            {    
+                return;
+            }
+            
+            Assert.Fail("Exception was not catch");
+        }
+
+        [TestMethod]
+        public void MapGetDestinationPathTest()
+        {
+            Mapper.Clear();
+            Func<CustomerSubClass, string> func = @class => @class.Name;
+            Func<CustomerViewItem, CustomerViewItem> n = item =>
+                item.Apply(o => o.SubSubItem = new CustomerSubViewItem());
+
+            var map = Mapper.Create<Customer, CustomerViewItem>();
+            map.RegisterGlobalMethod("f", func);
+            map.RegisterGlobalMethod("n", n);
+            map.Remap<string>("Sub/Name", "SubName");
+
+            var result = map.As<IPathProvider>().GetDestinationPath("Sub/Name");            
+
+            Assert.AreEqual(result, "SubName");
+        }
+
+        [TestMethod]
+        public void MapGetDestinationPathAmbiousTest()
+        {
+            Mapper.Clear();
+            Func<CustomerSubClass, string> func = @class => @class.Name;
+            Func<CustomerViewItem, CustomerViewItem> n = item =>
+                item.Apply(o => o.SubSubItem = new CustomerSubViewItem());
+
+            var map = Mapper.Create<Customer, CustomerViewItem>();
+            map.RegisterGlobalMethod("f", func);
+            map.RegisterGlobalMethod("n", n);
+            map.Remap<string>("Sub/Name", "SubName");
+            map.Remap<string>("Sub/Name", "n/SubSubItem/Name");
+
+            try
+            {
+                map.As<IPathProvider>().GetDestinationPath("Sub/Name");
+                Assert.Fail("Exception was not thrown");
+            }
+            catch(AmbiguousMatchException e)
+            {
+                return;
+            }
+
+            Assert.Fail("Exception was not catch");
+        }
+
+        [TestMethod]
+        public void MapGetSourcePathTest()
+        {
+            Mapper.Clear();
+            Func<CustomerSubClass, string> func = @class => @class.Name;
+            Func<CustomerViewItem, CustomerViewItem> n = item =>
+                item.Apply(o => o.SubSubItem = new CustomerSubViewItem());
+
+            var map = Mapper.Create<Customer, CustomerViewItem>();
+            map.ConfigMap(o => o.Separator = '.');
+            map.RegisterGlobalMethod("f", func);
+            map.RegisterGlobalMethod("n", n);
+            map.Remap<string>("Sub.Name", "SubName");            
+
+            var result = map.As<IPathProvider>().GetSourcePath("SubName");
+
+            Assert.AreEqual(result, "Sub.Name");
+        }
+
+        [TestMethod]
         public void MapAutoTest()
-        {            
+        {
+            Mapper.Clear();
             var map = Mapper.Create<Customer, CustomerViewItem>()
                 .Auto();            
 
@@ -189,6 +328,7 @@ namespace jetMapperTests
         [TestMethod]
         public void MapAutoPerformanceTest()
         {
+            Mapper.Clear();
             var map = RunTimedFunction(() => Mapper.Create<Customer, CustomerViewItem>().Auto(), "Map (Auto) initialization: ");
 
             for (int x = 1; x <= 1000000; x *= 10)
@@ -209,6 +349,7 @@ namespace jetMapperTests
         [TestMethod]
         public void MapPerformanceTest()
         {
+            Mapper.Clear();
             Func<CustomerSubClass, string> func = @class => @class.Name;
             Func<CustomerViewItem, CustomerViewItem> n = item =>
                 item.Apply(o => o.SubSubItem = new CustomerSubViewItem());
@@ -242,6 +383,7 @@ namespace jetMapperTests
         [TestMethod]
         public void MapWithNonDefaulrSeparatorTest()
         {
+            Mapper.Clear();
             Func<CustomerSubClass, string> func = @class => @class.Name;
             Func<CustomerViewItem, CustomerViewItem> n = item =>
                 item.Apply(o => o.SubSubItem = new CustomerSubViewItem());

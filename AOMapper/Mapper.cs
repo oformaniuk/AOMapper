@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 using AOMapper.Extensions;
 using AOMapper.Helpers;
@@ -16,13 +18,17 @@ namespace AOMapper
     {
         static Mapper()
         {
+            TypeOfObject = typeof(object);
             var mapperType = typeof (Mapper);
+            GlobalMethods = new Lazy<Dictionary<string, MethodProperty>>();
+            Maps = new Dictionary<ArgArray, object>();
             ActionConverter = mapperType.GetMethod("_convertAction", BindingFlags.NonPublic | BindingFlags.Static);
             FuncConverter = mapperType.GetMethod("_convertFunc", BindingFlags.NonPublic | BindingFlags.Static);
             GetSourceInvoker = mapperType.GetMethod("GetSourceInvokeChain", BindingFlags.NonPublic | BindingFlags.Static);
             GetterCreator = mapperType.GetMethod("GetterBuilder", BindingFlags.NonPublic | BindingFlags.Static);
             InitCreator = mapperType.GetMethod("InitBuilder", BindingFlags.NonPublic | BindingFlags.Static);
             SetterCreator = mapperType.GetMethod("___getSetInvoker", BindingFlags.NonPublic | BindingFlags.Static);
+            CreatedMappers = new List<object>();
         }
 
         /// <summary>
@@ -32,7 +38,14 @@ namespace AOMapper
         public static IMap<TS, TR> Create<TS, TR>()
         {
             return MapperInnerClass<TS, TR>.Map();
-        }        
+        }
+
+        public static void Clear()
+        {
+            foreach (var map in CreatedMappers) map.As<IDisposable>().Dispose(); 
+            CreatedMappers.Clear();
+            Maps.Clear();
+        }
 
         #region Fields
 
@@ -46,17 +59,17 @@ namespace AOMapper
 
         private static readonly MethodInfo InitCreator;
 
-        private static readonly Lazy<Dictionary<string, MethodProperty>> GlobalMethods =
-            new Lazy<Dictionary<string, MethodProperty>>();
+        private static readonly Lazy<Dictionary<string, MethodProperty>> GlobalMethods;
 
-        private static readonly Dictionary<ArgArray, object> Maps
-            = new Dictionary<ArgArray, object>();
+        private static readonly Dictionary<ArgArray, object> Maps;           
 
         private static readonly MethodInfo SetterCreator;
 
-        private static readonly Type TypeOfObject = typeof (object);
+        private static readonly Type TypeOfObject;
 
         private const string InitMethodName = "________InIt";
+
+        protected static readonly List<object> CreatedMappers;  
 
         protected object InitializeValue(object obj, string prop)
         {
@@ -112,7 +125,7 @@ namespace AOMapper
 
         #region Mapper
 
-        protected class MapperInnerClass<TSource, TDestination> : Mapper, IMap<TSource, TDestination>
+        protected class MapperInnerClass<TSource, TDestination> : Mapper, IMap<TSource, TDestination>, IPathProvider, IDisposable
         {
             #region Fields
 
@@ -220,7 +233,7 @@ namespace AOMapper
 
             #endregion
 
-            #region Do
+            #region Do            
 
             /// <summary>
             /// Executes mapping from target to destination object      
@@ -312,6 +325,7 @@ namespace AOMapper
                 else mapper._map = (PropertyMap<TSource, TDestination>) Mapper.Maps[args];
 
                 Mappers.Add(args, mapper);
+                CreatedMappers.Add(mapper);
 
                 return mapper;
             }
@@ -380,6 +394,51 @@ namespace AOMapper
                 return destinationObject;
             }
 
+            #region IPathProvider
+
+            public string GetSourcePath<T, R>(Expression<Func<T, R>> destination)
+            {
+                var body = destination.Body as MemberExpression;
+                if(body == null) throw new MissingMemberException();
+                return GetSourcePath(body.Member.Name);
+            }
+
+            public string GetSourcePath(string destination)
+            {
+                try
+                {
+                    return _map.DestinationNonReMapedProperties.SingleOrDefault(o => o.Equals(destination)) ??
+                           _map.AdditionalMaps.Single(o => o.Value.Path.Equals(destination)).Key.Path;
+                }
+                catch (InvalidOperationException e)
+                {
+                    throw new AmbiguousMatchException("More then one result found.");
+                }
+            }
+
+            public string GetDestinationPath<T, R>(Expression<Func<T, R>> source)
+            {
+                var body = source.Body as MemberExpression;
+                if (body == null) throw new MissingMemberException();
+                return GetDestinationPath(body.Member.Name);
+            }
+
+            public string GetDestinationPath(string source)
+            {
+                try
+                {
+                    return _map.SourceNonReMapedProperties.SingleOrDefault(o => o.Equals(source)) ??
+                           _map.AdditionalMaps.Single(o => o.Key.Path.Equals(source)).Value.Path;
+                }
+                catch (InvalidOperationException e)
+                {
+                    throw new AmbiguousMatchException("More then one result found.");
+                }
+            }
+
+            #endregion
+
+
             #region IMap<,>
 
             /// <summary>        
@@ -441,7 +500,7 @@ namespace AOMapper
                 }
 
                 return new MappingObject<TSource, TDestination>(metadatas) {UnderlyingObject = obj};
-            }
+            }            
 
             IMap<TSource, TDestination> IMap<TSource, TDestination>.RegisterDestinationMethod<T>(string name, T method)
             {
@@ -641,7 +700,8 @@ namespace AOMapper
                     var p = DataProxy.Create(propertyType);
                     if (p.ContainsProperty(s)) target = p.GetPropertyInfo(s).PropertyType;
                     else if (p.ContainsMethod(s)) target = p.Methods[s].Info.ReturnType;
-                    else target = GlobalMethods.Value[s].Info.ReturnType;
+                    else if(GlobalMethods.Value.ContainsKey(s)) target = GlobalMethods.Value[s].Info.ReturnType;
+                    else throw new InvalidOperationException(string.Format("Cannot find entry '{0}' for current operation.", firstPath));
 
                     var pair =
                         (KeyValuePair<Type, Delegate>) GetterCreator.MakeGenericMethod(typeof (T), propertyType, target)
@@ -698,11 +758,15 @@ namespace AOMapper
                         .MakeGeneric(typeof (T), propertyType)
                         .Invoke(null, new object[] {xc.Methods[firstPath].Delegate});
                 }
-                else
+                else if (GlobalMethods.Value.ContainsKey(firstPath))
                 {
                     var method = GlobalMethods.Value[firstPath];
                     fe = method.Delegate;
                     propertyType = method.Info.ReturnType;
+                }
+                else
+                {
+                    throw new InvalidOperationException(string.Format("Cannot find entry '{0}' for current operation.", firstPath));
                 }
 
                 if (f != null)
@@ -818,10 +882,14 @@ namespace AOMapper
                     var info = proxy.Methods[lastPath].Info;
                     return new[] {info, info};
                 }
-                else
+                else if (GlobalMethods.Value.ContainsKey(lastPath))
                 {
                     var info = GlobalMethods.Value[lastPath].Info;
-                    return new[] {info, info};
+                    return new[] { info, info };
+                }
+                else
+                {
+                    throw new InvalidOperationException(string.Format("Cannot find entry '{0}' for current operation.", lastPath));
                 }
             }
 
@@ -831,20 +899,30 @@ namespace AOMapper
                 var proxy = DataProxy.Create((object) objType);
                 string lastPath = paths.Last();
 
-                foreach (var s in paths.Where(o => !o.Equals(InitMethodName)))
+                for (int i = 0; i < paths.Length; i++)
                 {
+                    var s = paths[i];
+
+                    if(s.Equals(InitMethodName)) continue;
+
                     if (proxy.ContainsProperty(s)) target = proxy.GetPropertyInfo(s).PropertyType;
                     else if (proxy.ContainsMethod(s)) target = proxy.Methods[s].Info.ReturnType;
-                    else target = GlobalMethods.Value[s].Info.ReturnType;
+                    else if (GlobalMethods.Value.ContainsKey(s)) target = GlobalMethods.Value[s].Info.ReturnType;
+                    else throw new InvalidOperationException(string.Format("Cannot find entry '{0}' for current operation.", s));
 
                     if (s != lastPath)
                         proxy = DataProxy.Create(target);
-                }
+                }                
 
                 return target;
             }
 
             #endregion
+
+            void IDisposable.Dispose()
+            {
+                Mappers.Clear();
+            }
         }
 
         #endregion
@@ -870,6 +948,10 @@ namespace AOMapper
             {
                 var method = GlobalMethods.Value[firstPath];
                 tempValue = method.Delegate as Func<T, TR>;
+            }
+            else
+            {
+                throw new InvalidOperationException(string.Format("Cannot find entry '{0}' for current operation.", firstPath));
             }
 
             return new KeyValuePair<Type, Delegate>(tempValue.Method.ReturnType,

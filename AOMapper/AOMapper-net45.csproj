@@ -62,6 +62,7 @@
     <Compile Include="Helpers\TypeGenerator.cs" />
     <Compile Include="Interfaces\IAccessObject.cs" />
     <Compile Include="Interfaces\IMap.cs" />
+    <Compile Include="Interfaces\IPathProvider.cs" />
     <Compile Include="Linker.cs" />
     <Compile Include="Mapper.cs" />
     <Compile Include="MappingObject.cs" />
