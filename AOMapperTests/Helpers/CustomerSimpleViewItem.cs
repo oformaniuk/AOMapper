@@ -1,23 +1,23 @@
 using System;
 
-namespace jetMapperTests
+namespace AOMapperTests.Helpers
 {
-    public class CustomerViewItem
+    public class CustomerSimpleViewItem
     {
         public string FirstName { get; set; }
         public string LastName { get; set; }
         public DateTime DateOfBirth { get; set; }
         //}
 
-        public virtual string SubName { get; set; }
+        //public virtual string SubName { get; set; }
 
-        public virtual CustomerSubViewItem SubSubItem { get; set; }
+        //public virtual CustomerSubViewItem SubSubItem { get; set; }
 
-        public int NumberOfOrders { get; set; }
+        //public int NumberOfOrders { get; set; }
 
-        protected bool Equals(CustomerViewItem other)
+        protected bool Equals(CustomerSimpleViewItem other)
         {
-            return string.Equals(FirstName, other.FirstName) && string.Equals(LastName, other.LastName) && DateOfBirth.Equals(other.DateOfBirth) && NumberOfOrders == other.NumberOfOrders;
+            return string.Equals(FirstName, other.FirstName) && string.Equals(LastName, other.LastName) && DateOfBirth.Equals(other.DateOfBirth);// && NumberOfOrders == other.NumberOfOrders;
         }
 
         public override bool Equals(object obj)
@@ -25,7 +25,7 @@ namespace jetMapperTests
             if (ReferenceEquals(null, obj)) return false;
             if (ReferenceEquals(this, obj)) return true;
             if (obj.GetType() != this.GetType()) return false;
-            return Equals((CustomerViewItem)obj);
+            return Equals((CustomerSimpleViewItem)obj);
         }
 
         public override int GetHashCode()
@@ -35,8 +35,8 @@ namespace jetMapperTests
                 var hashCode = (FirstName != null ? FirstName.GetHashCode() : 0);
                 hashCode = (hashCode * 397) ^ (LastName != null ? LastName.GetHashCode() : 0);
                 hashCode = (hashCode * 397) ^ DateOfBirth.GetHashCode();
-                hashCode = (hashCode*397) ^ (SubName != null ? SubName.GetHashCode() : 0);
-                hashCode = (hashCode * 397) ^ NumberOfOrders;
+                //hashCode = (hashCode * 397) ^ (SubName != null ? SubName.GetHashCode() : 0);
+                //hashCode = (hashCode * 397) ^ NumberOfOrders;
                 return hashCode;
             }
         }

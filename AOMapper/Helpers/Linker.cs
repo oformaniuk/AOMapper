@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using AOMapper.Extensions;
 
-namespace AOMapper
+namespace AOMapper.Helpers
 {
     public class Linker<T, TR, TF>
     {
@@ -16,7 +16,7 @@ namespace AOMapper
 
         internal Linker(Func<T, TR> func) { _action = func.As<TF>(); }
         internal Linker(Action<T, object> func) { _action = func.As<TF>(); }
-
+        
         public Linker<T, TRNew, Func<T, TRNew>> Link<TRNew>(Func<TR, TRNew> func)
         {
             return new Linker<T, TRNew, Func<T, TRNew>>(_action.As<Func<T, TR>>().Compose<T, TR, TRNew>(func));                       

@@ -18,7 +18,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\net45\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;NET45</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
@@ -41,33 +41,30 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DataProxy.cs" />
     <Compile Include="Extensions\FuncExtensions.cs" />
     <Compile Include="Extensions\ObjectExtensions.cs" />
     <Compile Include="Extensions\TypeExtensions.cs" />
-    <Compile Include="Helpers\AccessObject.cs" />
-    <Compile Include="Helpers\ArgArray.cs" />
-    <Compile Include="Helpers\EditableKeyValuePair.cs" />
-    <Compile Include="Helpers\FieldMetadata.cs" />
-    <Compile Include="Helpers\MapObject.cs" />
-    <Compile Include="Helpers\PropertyMap.cs" />
+    <Compile Include="Data\AccessObject.cs" />
+    <Compile Include="Data\ArgArray.cs" />
+    <Compile Include="Data\EditableKeyValuePair.cs" />
+    <Compile Include="Data\FieldMetadata.cs" />
+    <Compile Include="Data\MapObject.cs" />
+    <Compile Include="Data\PropertyMap.cs" />
     <Compile Include="Helpers\TypeGenerator.cs" />
     <Compile Include="Interfaces\IAccessObject.cs" />
     <Compile Include="Interfaces\IMap.cs" />
     <Compile Include="Interfaces\IPathProvider.cs" />
-    <Compile Include="Linker.cs" />
+    <Compile Include="Helpers\Linker.cs" />
     <Compile Include="Mapper.cs" />
-    <Compile Include="MappingObject.cs" />
-    <Compile Include="MethodProperty.cs" />
+    <Compile Include="Data\MappingObject.cs" />
+    <Compile Include="Data\MethodProperty.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Resolvers\ArrayResolver.cs" />
+    <Compile Include="Resolvers\ListResolver.cs" />
+    <Compile Include="Resolvers\Resolver.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Key.snk" />

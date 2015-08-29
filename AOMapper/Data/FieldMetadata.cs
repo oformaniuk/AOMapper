@@ -1,8 +1,8 @@
 using System;
 
-namespace AOMapper
+namespace AOMapper.Data
 {
-    internal class FieldMetadata
+    internal struct FieldMetadata
     {
         public object Object { get; set; }
         public Type DeclareType { get; set; }

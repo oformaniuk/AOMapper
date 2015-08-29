@@ -1,4 +1,4 @@
-namespace jetMapperTests
+namespace AOMapperTests.Helpers
 {
     public class CustomerSubClass
     {

@@ -1,8 +1,8 @@
 using System;
 
-namespace AOMapper
+namespace AOMapper.Data
 {
-    public class MethodProperty
+    public struct MethodProperty
     {        
         public System.Reflection.MethodInfo Info { get; set; }
         public Delegate Delegate { get; set; }

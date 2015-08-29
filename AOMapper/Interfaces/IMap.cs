@@ -1,4 +1,5 @@
 using System;
+using AOMapper.Data;
 
 namespace AOMapper.Interfaces
 {
@@ -12,6 +13,12 @@ namespace AOMapper.Interfaces
         /// </summary>
         /// <returns></returns>
         IMap Auto();
+
+        /// <summary>
+        /// Compiles the map
+        /// </summary>
+        /// <returns></returns>
+        IMap Compile();
 
         /// <summary>
         /// Remaps the specified property according to specified path
@@ -84,6 +91,9 @@ namespace AOMapper.Interfaces
         /// <param name="dest"></param>
         /// <returns></returns>
         TDestination Do<TSource, TDestination>(TSource obj, TDestination dest);
+
+        object Do(object source, object destination);
+        object Do(object source);
 
         /// <summary>        
         /// Generates mapping proxy object, that allows to perform real-time mapping using parent gettes and setters.
@@ -170,7 +180,7 @@ namespace AOMapper.Interfaces
         /// </summary>
         /// <param name="obj"></param>
         /// <returns></returns>
-        TDestination Do(object obj);
+        new TDestination Do(object obj);
 
         /// <summary>
         /// Executes mapping from target to destination object
@@ -185,7 +195,7 @@ namespace AOMapper.Interfaces
         /// </summary>
         /// <param name="config"></param>
         /// <returns></returns>
-        IMap<TDestination> ConfigMap(Action<Mapper.Config> config);        
+        new IMap<TDestination> ConfigMap(Action<Mapper.Config> config);        
     }
 
     /// <summary>
@@ -274,7 +284,7 @@ namespace AOMapper.Interfaces
         /// </summary>
         /// <param name="config"></param>
         /// <returns></returns>
-        IMap<TSource, TDestination> ConfigMap(Action<Mapper.Config> config);        
+        new IMap<TSource, TDestination> ConfigMap(Action<Mapper.Config> config);        
 
         /// <summary>        
         /// Generates mapping proxy object, that allows to perform real-time mapping using parent gettes and setters.

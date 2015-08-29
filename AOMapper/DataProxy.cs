@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using AOMapper.Data;
 using AOMapper.Extensions;
 using AOMapper.Helpers;
 using AOMapper.Interfaces;
@@ -13,6 +14,8 @@ namespace AOMapper
     public abstract class DataProxy
     {
         #region Fields
+
+        protected readonly static Type _enumerableType = typeof(IEnumerable);
 
         protected static readonly Lazy<Dictionary<Type, Dictionary<string, IAccessObject>>> AccessObjects =
             new Lazy<Dictionary<Type, Dictionary<string, IAccessObject>>>();
@@ -422,11 +425,46 @@ namespace AOMapper
                 .Invoke(this, new object[] {name});
         }
 
+        internal object GetReflectedSetter(string name, Type type)
+        {
+            return this.GetType().GetMethod("GetSetterGeneric", BindingFlags.NonPublic | BindingFlags.Instance)
+                .MakeGeneric(type)
+                .Invoke(this, new object[] { name });
+        }
+
+        internal object GetReflectedConvertedGetter(string name, Type type)
+        {
+            return this.GetType().GetMethod("GetGetterConverted", BindingFlags.NonPublic | BindingFlags.Instance)
+                .MakeGeneric(type)
+                .Invoke(this, new object[] { name });
+        }
+
+        internal object GetReflectedConvertedSetter(string name, Type type)
+        {
+            return this.GetType().GetMethod("GetSetterConverted", BindingFlags.NonPublic | BindingFlags.Instance)
+                .MakeGeneric(type)
+                .Invoke(this, new object[] { name });
+        }
+
         internal Func<TEntity, TR> GetGetterGeneric<TR>(string name)
         {
             return _accessObjects[name].GetGetter<TEntity, TR>();
         }
 
+        internal Action<TEntity, TR> GetSetterGeneric<TR>(string name)
+        {
+            return _accessObjects[name].GetSetter<TEntity, TR>();
+        }
+
+        internal Action<TEntity, object> GetSetterConverted<TR>(string name)
+        {
+            return _accessObjects[name].GetSetter<TEntity, TR>().Convert<TEntity, TR, TEntity, object>();
+        }
+
+        internal Func<TEntity, object> GetGetterConverted<TR>(string name)
+        {
+            return _accessObjects[name].GetGetter<TEntity, TR>().Convert<TEntity, TR, TEntity, object>();
+        }
 
         /// <summary>
         /// Gets the property information.
@@ -474,6 +512,12 @@ namespace AOMapper
             return _accessObjects[name].CanCreate;
         }
 
+        public bool IsEnumerable(string name)
+        {
+            var propertyType = _accessObjects[name].PropertyInfo.PropertyType;
+            return _enumerableType.IsAssignableFrom(propertyType) && propertyType != typeof(string);
+        }
+
         #endregion                 
         
         #region Helpers
@@ -504,6 +548,8 @@ namespace AOMapper
 
         private static void BuildAccessor<T, TR>(Type type, PropertyInfo o)
         {
+            if (o.GetIndexParameters().Any()) return; // indexers are not supported
+
             if (AccessObjects.Value[type].ContainsKey(o.Name) && o.DeclaringType == type)
             {
                 AccessObjects.Value[type][o.Name] = new AccessObject<T, TR>

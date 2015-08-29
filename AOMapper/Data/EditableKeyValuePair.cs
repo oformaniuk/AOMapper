@@ -1,4 +1,4 @@
-﻿namespace AOMapper.Helpers
+﻿namespace AOMapper.Data
 {
     internal class EditableKeyValuePair<TKey, TValue>
     {

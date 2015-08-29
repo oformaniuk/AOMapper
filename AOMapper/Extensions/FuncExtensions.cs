@@ -1,5 +1,6 @@
 using System;
 using System.Reflection;
+using AOMapper.Helpers;
 
 namespace AOMapper.Extensions
 {
@@ -35,10 +36,15 @@ namespace AOMapper.Extensions
             return @new => f(@new.As<T>());
         }
 
+        //public static Action<TNew, TRNew> Convert<T, TR, TNew, TRNew>(this Action<T, TR> f)
+        //{
+        //    return (@new, rNew) => f(@new.As<T>(), rNew.As<TR>());//@new => f(@new.As<T>());
+        //}
+
         public  static Func<TX, TZ> Compose<TX, TY, TZ>(this Func<TX, TY> f, Func<TY, TZ> g)
         {
             return x => g(f(x));
-        }
+        }        
 
         public static Func<TX, TZ> Compose<TX, TY, TZ>(this Func<TX, TY> f, Delegate g)
         {

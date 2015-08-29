@@ -1,6 +1,6 @@
 using System;
 
-namespace AOMapper
+namespace AOMapper.Data
 {
     internal class MapObject<TF>
     {

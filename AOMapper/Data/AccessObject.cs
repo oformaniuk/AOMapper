@@ -3,9 +3,9 @@ using System.Reflection;
 using AOMapper.Extensions;
 using AOMapper.Interfaces;
 
-namespace AOMapper
+namespace AOMapper.Data
 {
-    internal class AccessObject<T, TResult> : IAccessObject
+    internal struct AccessObject<T, TResult> : IAccessObject
     {
         public bool CanGet
         {

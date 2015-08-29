@@ -1,8 +1,8 @@
 ﻿using System.Linq;
 
-namespace AOMapper.Helpers
+namespace AOMapper.Data
 {
-    internal class ArgArray
+    internal struct ArgArray
     {
         private readonly object[] _argArray;
 
@@ -12,10 +12,11 @@ namespace AOMapper.Helpers
         }
 
         public override bool Equals(object obj)
-        {
+        {                        
+            if (!(obj is ArgArray)) return false;
+
             // cast object to object array
-            ArgArray comparedObject = obj as ArgArray;
-            if (comparedObject == null) return false;
+            ArgArray comparedObject = (ArgArray)obj;
 
             // compare the array lengths
             if (comparedObject._argArray.Length == this._argArray.Length)

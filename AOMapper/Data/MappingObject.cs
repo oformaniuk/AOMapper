@@ -3,10 +3,9 @@ using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Reflection;
 using AOMapper.Extensions;
-using AOMapper.Helpers;
 using AOMapper.Interfaces;
 
-namespace AOMapper
+namespace AOMapper.Data
 {
     public class MappingObject<TSource, TDestination> : MappingObject
     {
