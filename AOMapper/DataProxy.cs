@@ -60,27 +60,7 @@ namespace AOMapper
             return new DataProxy<object>(type);
         }
 
-        #endregion
-
-        #region Helpers
-
-        //protected static Action<T, object> ___getSetInvoker<T>(DataProxy<T> proxy, string name)
-        //{
-        //    return proxy.GetSetter(name);
-        //}
-
-        //protected static Action<TNew, TRNew> _convertAction<T, TR, TNew, TRNew>(Action<T, TR> f)
-        //{
-        //    return (o, o1) => f(o.As<T>(), o1.As<TR>());
-        //}
-
-        //protected static Func<T, TR> _convertFunc<T, TR>(Func<T, object> f)
-        //{
-        //    return arg => (TR) f(arg);
-        //}
-
-        #endregion
-
+        #endregion        
     }
 
     /// <summary>

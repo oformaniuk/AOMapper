@@ -69,6 +69,11 @@
       <Name>AOMapper-net45</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup>
+    <Compile Include="MapperTests.Logic.cs">
+      <DependentUpon>MapperTests.cs</DependentUpon>
+    </Compile>
+  </ItemGroup>
   <Choose>
     <When Condition="'$(VisualStudioVersion)' == '10.0' And '$(IsCodedUITest)' == 'True'">
       <ItemGroup>
