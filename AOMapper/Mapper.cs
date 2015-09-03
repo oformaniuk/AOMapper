@@ -11,6 +11,7 @@ using AOMapper.Data;
 using AOMapper.Extensions;
 using AOMapper.Interfaces;
 using AOMapper.Resolvers;
+using AOMapper.Helpers;
 
 namespace AOMapper
 {
@@ -27,7 +28,7 @@ namespace AOMapper
             Maps = new Dictionary<ArgArray, object>();
             ActionConverter = mapperType.GetMethod("_convertAction", BindingFlags.NonPublic | BindingFlags.Static);
             FuncConverter = mapperType.GetMethod("_convertFunc", BindingFlags.NonPublic | BindingFlags.Static);
-            GetSourceInvoker = mapperType.GetMethod("GetSourceInvokeChain", BindingFlags.NonPublic | BindingFlags.Static);
+            //GetSourceInvoker = mapperType.GetMethod("GetSourceInvokeChain", BindingFlags.NonPublic | BindingFlags.Static);
             GetterCreator = mapperType.GetMethod("GetterBuilder", BindingFlags.NonPublic | BindingFlags.Static);
             InitCreator = mapperType.GetMethod("InitBuilder", BindingFlags.NonPublic | BindingFlags.Static);
             LoopCreator = mapperType.GetMethod("LoopBuilder", BindingFlags.NonPublic | BindingFlags.Static);
@@ -58,7 +59,7 @@ namespace AOMapper
 
         private static readonly MethodInfo FuncConverter;
 
-        private static readonly MethodInfo GetSourceInvoker;
+        //private static readonly MethodInfo GetSourceInvoker;
 
         private static readonly MethodInfo GetterCreator;
 
@@ -773,7 +774,28 @@ namespace AOMapper
                 }
 
                 return new MappingObject<TSource, TDestination>(metadatas) {UnderlyingObject = obj};
-            }            
+            }
+
+            public IMap Remap<TS, TR>(Expression<Func<TSource, TS>> source, Expression<Func<TDestination, TR>> destination)                
+            {
+                var sourceBody = source.Body as MemberExpression;
+                var destinationBody = destination.Body as MemberExpression;
+
+                if (sourceBody == null) throw new MissingMemberException();
+                if (destinationBody == null) throw new MissingMemberException();
+
+                var sourceMatch = Regex.Match(sourceBody.ToString(), @"^.+\.((.+\.)+(.+))");
+                if(!sourceMatch.Success) throw new ArgumentException("Source path cannot be recognized");
+                var sourcePath = sourceMatch.Groups[1].Value.Replace('.', _config.Separator);
+
+                var destinationMatch = Regex.Match(destinationBody.ToString(), @"^.+\.((.+\.)+(.+))");
+                if (!destinationMatch.Success) throw new ArgumentException("Destination path cannot be recognized");
+                var destinationPath = destinationMatch.Groups[1].Value.Replace('.', _config.Separator);
+
+                RegisterAdditionalMap<TR>(sourcePath, destinationPath);
+
+                return this;
+            }
 
             IMap<TSource, TDestination> IMap<TSource, TDestination>.RegisterDestinationMethod<T>(string name, T method)
             {
@@ -936,9 +958,35 @@ namespace AOMapper
 
             #region Helpers
 
-            private static Func<T, TR> GetSourceInvokeChain<T, TR>(T obj, string[] paths, out Delegate @out)
+            private void ValidateSection<T>(DataProxy<T> xc, string firstPath,
+                Action<Type, object> onResult) 
+                //ref Type propertyType, ref object @delegate)
+            {
+                Type propertyType; object @delegate;
+                if (xc.ContainsProperty(firstPath))
+                {
+                    propertyType = xc.GetPropertyInfo(firstPath).PropertyType;
+                    @delegate = xc.GetReflectedGetter(firstPath, propertyType);
+                }
+                else if (xc.ContainsMethod(firstPath))
+                {
+                    propertyType = xc.Methods[firstPath].Info.ReturnType;
+                    @delegate = FuncConverter
+                        .MakeGeneric(typeof(T), propertyType)
+                        .Invoke(null, new object[] { xc.Methods[firstPath].Delegate });
+                }
+                else
+                {
+                    var method = GlobalMethods.Value[firstPath];
+                    @delegate = method.Delegate;
+                    propertyType = method.Info.ReturnType;
+                }
+            }
+
+            private Func<T, TR> GetSourceInvokeChain<T, TR>(string path, T obj, out Delegate @out)
             {
                 @out = null;
+                var paths = path.Split(_config.Separator).Select(x => x.Trim()).ToArray();                
                 var firstPath = paths.First();
                 var xc = DataProxy.Create<T>();
 
@@ -1118,29 +1166,38 @@ namespace AOMapper
                         Delegate tempSource = null;
                         _map.AdditionalMaps.Add(new EditableKeyValuePair
                             <MapObject<Func<TSource, object>>, MapObject<Action<TDestination, object>>>
-                            (new MapObject<Func<TSource, object>>
-                            {
-                                Path = source,
-                                Invoker = source == null ? null :
-                                    GetSourceInvokeChain<TSource, TR>(SourceDefault,
-                                        source.Split(_config.Separator).Select(x => x.Trim()).ToArray(), out tempSource)
-                                        .Convert<TSource, TR, TSource, object>(),
-                                LastInvokeTarget = source == null ? null : tempSource
-                            },
-                                new MapObject<Action<TDestination, object>>
-                                {
-                                    Path = destination,
-                                    Invoker =
-                                        GetDestinationInvokeChain<TDestination, TR>(destination, DestinationDefault,
-                                            out tempSource).Convert<TDestination, TR, TDestination, Object>(),
-                                    LastInvokeTarget = tempSource
-                                }
-                            ));
+                                (CreateSourceMapObject<TR>(source), CreateDestinationMapObject<TR>(destination)));
                         _map.Calculate();
                     }
                     else _map.AdditionalMaps.Single(o => o.Value.Path.Equals(destination)).Key.Path = source;
                 }
                 return this;
+            }
+
+            private MapObject<Action<TDestination, object>> CreateDestinationMapObject<TR>(string destination)
+            {
+                Delegate tempSource;
+                return new MapObject<Action<TDestination, object>>
+                {
+                    Path = destination,
+                    Invoker =
+                        GetDestinationInvokeChain<TDestination, TR>(destination, DestinationDefault,
+                            out tempSource).Convert<TDestination, TR, TDestination, Object>(),
+                    LastInvokeTarget = tempSource
+                };
+            }
+
+            private MapObject<Func<TSource, object>> CreateSourceMapObject<TR>(string source)
+            {
+                Delegate tempSource = null;
+                return new MapObject<Func<TSource, object>>
+                {
+                    Path = source,
+                    Invoker = source == null ? null :
+                        GetSourceInvokeChain<TSource, TR>(source, SourceDefault, out tempSource)
+                            .Convert<TSource, TR, TSource, object>(),
+                    LastInvokeTarget = source == null ? null : tempSource
+                };
             }
 
             private MethodInfo[] DetermineResultProperty<T>(T objType, string[] paths)

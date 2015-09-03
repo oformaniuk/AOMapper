@@ -1,4 +1,5 @@
 using System;
+using System.Linq.Expressions;
 using AOMapper.Data;
 
 namespace AOMapper.Interfaces
@@ -35,7 +36,7 @@ namespace AOMapper.Interfaces
         /// <param name="source"></param>
         /// <param name="destination"></param>
         /// <returns></returns>
-        IMap Remap<TR>(string source, string destination);
+        IMap Remap<TR>(string source, string destination);        
 
         /// <summary>
         /// Registers a new method for the destination type
@@ -218,6 +219,11 @@ namespace AOMapper.Interfaces
         /// <param name="destination"></param>
         /// <returns></returns>
         new IMap<TSource, TDestination> Remap(string source, string destination);
+
+        /// <summary>
+        /// Remaps the specified property according to specified path
+        /// </summary>        
+        IMap Remap<TS, TR>(Expression<Func<TSource, TS>> source, Expression<Func<TDestination, TR>> destination);
 
         /// <summary>
         /// Remaps the specified property according to specified path

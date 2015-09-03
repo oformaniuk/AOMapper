@@ -23,7 +23,7 @@ namespace ProfilerTarget
             var map = RunTimedFunction((s) =>
             {
                 s.Start();
-                var o = Mapper.Create<Customer, CustomerViewItem>().Auto();   
+                var o = Mapper.Create<Customer2, CustomerViewItem2>().Auto();   
                 s.Stop();
                 return o;
             }, "Mapper initialization: ");
@@ -32,7 +32,7 @@ namespace ProfilerTarget
             {
                 Mapper.Clear();
                 s.Start();
-                var o = (IMap<Customer, CustomerViewItem>)Mapper.Create<Customer, CustomerViewItem>().Auto().Compile();
+                var o = (IMap<Customer2, CustomerViewItem2>)Mapper.Create<Customer2, CustomerViewItem2>().Auto().Compile();
                 s.Stop();
                 return o;
             }, "Mapper compile: ");
@@ -40,7 +40,11 @@ namespace ProfilerTarget
             RunTimedFunction<object>((s) =>
             {
                 s.Start();
-                AutoMapper.Mapper.CreateMap<Customer, CustomerViewItem>();
+                AutoMapper.Mapper.CreateMap<SimpleObjectInner, SimpleObjectViewItemInner>();
+                AutoMapper.Mapper.CreateMap<SimpleObject, SimpleObjectViewItem>()
+                    .ForMember(o => o.Inners, o => o.MapFrom(simpleObject => AutoMapper.Mapper.Map<IList<SimpleObjectInner>, IList<SimpleObjectViewItemInner>>(simpleObject.Inners)));
+                AutoMapper.Mapper.CreateMap<Customer2, CustomerViewItem2>()
+                    .ForMember(o => o.ViewItems, x => x.MapFrom(customer2 => AutoMapper.Mapper.Map<SimpleObject[], SimpleObjectViewItem[]>(customer2.ViewItems)));
                 s.Start();
 
                 return null;
@@ -55,15 +59,15 @@ namespace ProfilerTarget
 
                 var mapperResult = RunTimedFunction((s) => RunMapper(map, s), string.Format("Mapper with {0} elements: ", x));
                 var mapperCompiledResult = RunTimedFunction((s) => RunMapper(mapCompiled, s), string.Format("Mapper (Compiled) with {0} elements: ", x));
-                var autoMapperResult = RunTimedFunction(RunAutoMapper<Customer, CustomerViewItem>, string.Format("AutoMapper with {0} elements: ", x));                
-                var manualResult = RunTimedFunction(RunManual, string.Format("Manual with {0} elements: ", x));
+                var autoMapperResult = RunTimedFunction(RunAutoMapper<Customer2, CustomerViewItem2>, string.Format("AutoMapper with {0} elements: ", x));                
+                var manualResult = RunTimedFunction(RunManual2, string.Format("Manual with {0} elements: ", x));
 
                 Console.WriteLine();
                 Console.WriteLine();
             }
         }
 
-        private List<Customer> _customers = new List<Customer>();
+        private List<Customer2> _customers = new List<Customer2>();
 
         private Customer GetCustomerFromDB()
         {
@@ -164,34 +168,34 @@ namespace ProfilerTarget
             return null;
         }
 
-        //private List<CustomerViewItem2> RunManual2(Stopwatch s)
-        //{
-        //    foreach (var customer in this._customers)
-        //    {
-        //        s.Start();
-        //        var customerViewManual = new CustomerViewItem2()
-        //        {
-        //            FirstName = customer.FirstName,
-        //            LastName = customer.LastName,
-        //            DateOfBirth = customer.DateOfBirth,
-        //            NumberOfOrders = customer.NumberOfOrders,
-        //            SubName = customer.Sub.Name,
-        //            SubSubItem = new CustomerSubViewItem { Name = customer.Sub.Name },
-        //            ViewItems = new SimpleObjectViewItem[5]
-        //        }.Apply(o => 5.For(i => o.ViewItems.SetValue(new SimpleObjectViewItem()
-        //        {
-        //            Date = customer.ViewItems[i].Date,
-        //            Name = customer.ViewItems[i].Name,
-        //            Inners = new List<SimpleObjectViewItemInner>(2)
-        //        {
-        //            new SimpleObjectViewItemInner{Inner = "123"}, new SimpleObjectViewItemInner{Inner = "543"}
-        //        }
-        //        }, i)));
-        //        s.Stop();
-        //    }
+        private List<CustomerViewItem2> RunManual2(Stopwatch s)
+        {
+            foreach (var customer in this._customers)
+            {
+                s.Start();
+                var customerViewManual = new CustomerViewItem2()
+                {
+                    FirstName = customer.FirstName,
+                    LastName = customer.LastName,
+                    DateOfBirth = customer.DateOfBirth,
+                    NumberOfOrders = customer.NumberOfOrders,
+                    SubName = customer.Sub.Name,
+                    SubSubItem = new CustomerSubViewItem { Name = customer.Sub.Name },
+                    ViewItems = new SimpleObjectViewItem[5]
+                }.Apply(o => 5.For(i => o.ViewItems.SetValue(new SimpleObjectViewItem()
+                {
+                    Date = customer.ViewItems[i].Date,
+                    Name = customer.ViewItems[i].Name,
+                    Inners = new List<SimpleObjectViewItemInner>(2)
+                {
+                    new SimpleObjectViewItemInner{Inner = "123"}, new SimpleObjectViewItemInner{Inner = "543"}
+                }
+                }, i)));
+                s.Stop();
+            }
 
-        //    return null;
-        //}
+            return null;
+        }
 
         private T RunTimedFunction<T>(Func<Stopwatch, T> f, string text)
         {
