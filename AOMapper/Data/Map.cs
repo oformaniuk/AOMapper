@@ -1,11 +1,11 @@
 ﻿namespace AOMapper.Data
 {
-    internal class EditableKeyValuePair<TKey, TValue>
+    internal class Map<TKey, TValue>
     {
         public TKey Key { get; set; }
         public TValue Value { get; set; }
 
-        public EditableKeyValuePair(TKey key, TValue value)
+        public Map(TKey key, TValue value)
         {
             Key = key;
             Value = value;

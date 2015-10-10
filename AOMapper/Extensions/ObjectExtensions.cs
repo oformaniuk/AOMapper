@@ -1,22 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Linq.Expressions;
+using System.Reflection;
 
 namespace AOMapper.Extensions
 {    
     public static class ObjectExtensions
     {
         /// <summary>
-        /// <para>The same as to do (T)object but in more clear manner</para>
-        /// <para>Doing in this way allows us to continue 'dotting' instead of doing something like ((T)obj).property</para>
-        /// </summary>
-        [Pure]
+        /// <para>The same as to do 'object as T' but in more clear manner</para>
+        /// <para>Doing in this way allows us to continue 'dotting' instead of doing something like (obj as T).property</para>
+        /// </summary>        
         [DebuggerStepThrough]
-        public static T As<T>(this object obj)
+        public static T As<T>(this object obj) where T : class
         {
-            return (T)obj;
+            return obj as T;
         }
 
         /// <summary>

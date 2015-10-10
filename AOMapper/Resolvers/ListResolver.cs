@@ -13,9 +13,9 @@ namespace AOMapper.Resolvers
         }
 
 
-        public override void Resolve(IList source, ref IList destination)
+        public override void Resolve(object source, ref object destination)
         {
-            var _source = (Array)source;
+            var _source = source as Array;
             var _destination = (TD[])destination;
             Array.Resize<TD>(ref _destination, _source.Length);
             for (int index = 0; index < _source.Length; index++)

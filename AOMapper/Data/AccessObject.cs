@@ -5,7 +5,7 @@ using AOMapper.Interfaces;
 
 namespace AOMapper.Data
 {
-    internal struct AccessObject<T, TResult> : IAccessObject
+    internal class AccessObject<T, TResult> : IAccessObject
     {
         public bool CanGet
         {
@@ -53,14 +53,14 @@ namespace AOMapper.Data
             get { return Setter; }
         }
 
-        public TR GetGeneric<T1, TR>(T1 obj)             
+        public TR GetGeneric<T1, TR>(T1 obj) where TR : class           
         {
-            return Getter(obj.As<T>()).As<TR>();
+            return Getter((T)(object)obj) as TR;
         }
 
-        public void SetGeneric<T1, TR>(T1 obj, TR value)            
+        public void SetGeneric<T1, TR>(T1 obj, TR value)          
         {
-            Setter(obj.As<T>(), value.As<TResult>());
+            Setter((T)(object)obj, (TResult)(object)value);
         }        
     }    
 }

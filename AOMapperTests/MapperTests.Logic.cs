@@ -46,6 +46,38 @@ namespace AOMapperTests
             }, i)));
         }
 
+        private Customer4 GetCustomer4FromDB()
+        {
+            return new Customer4()
+            {
+                DateOfBirth = RandomDay(),
+                FirstName = RandomString(7),
+                LastName = RandomString(8),
+                NumberOfOrders = RandomInt(1, 100),
+                Sub = new CustomerSubClass {Name = RandomString(10)},
+                DateTimes =
+                    new Dictionary<int, DateTime>
+                    {
+                        {RandomInt(0, 1000), RandomDay()},
+                        {RandomInt(0, 1000), RandomDay()},
+                        {RandomInt(0, 1000), RandomDay()}
+                    }
+            };
+        }
+
+        private Customer5 GetCustomer5FromDB()
+        {
+            return new Customer5()
+            {
+                DateOfBirth = RandomDay(),
+                FirstName = RandomString(7),
+                LastName = RandomString(8),
+                NumberOfOrders = RandomInt(1, 100),
+                Sub = new CustomerSubClass { Name = RandomString(10) },
+                DateTimes = new List<DateTime> { RandomDay(), RandomDay(), RandomDay()}
+            };
+        }
+
         private void PopulateCustomers(int count)
         {
             _customers.Clear();
@@ -122,7 +154,8 @@ namespace AOMapperTests
             stopwatch.Start();
             var result = f();
             stopwatch.Stop();
-            TestContext.WriteLine(text + stopwatch.ElapsedMilliseconds);
+            if(TestContext != null)
+                TestContext.WriteLine(text + stopwatch.ElapsedMilliseconds);
 
             return result;
         }

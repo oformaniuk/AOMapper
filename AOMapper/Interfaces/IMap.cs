@@ -1,6 +1,7 @@
 using System;
 using System.Linq.Expressions;
 using AOMapper.Data;
+using AOMapper.Resolvers;
 
 namespace AOMapper.Interfaces
 {
@@ -27,7 +28,7 @@ namespace AOMapper.Interfaces
         /// <param name="source"></param>
         /// <param name="destination"></param>
         /// <returns></returns>
-        IMap Remap(string source, string destination);
+        IMap Remap(string source, string destination, Resolver resolver = null);
 
         /// <summary>
         /// Remaps the specified property according to specified path
@@ -36,7 +37,7 @@ namespace AOMapper.Interfaces
         /// <param name="source"></param>
         /// <param name="destination"></param>
         /// <returns></returns>
-        IMap Remap<TR>(string source, string destination);        
+        IMap Remap<TR>(string source, string destination, Resolver resolver = null);        
 
         /// <summary>
         /// Registers a new method for the destination type
@@ -93,7 +94,20 @@ namespace AOMapper.Interfaces
         /// <returns></returns>
         TDestination Do<TSource, TDestination>(TSource obj, TDestination dest);
 
+
+        /// <summary>
+        /// Executes mapping from target to destination object
+        /// </summary>
+        /// <param name="source"></param>
+        /// <param name="destination"></param>
+        /// <returns></returns>
         object Do(object source, object destination);
+
+        /// <summary>
+        /// Executes mapping from target to destination object
+        /// </summary>
+        /// <param name="source"></param>
+        /// <returns></returns>
         object Do(object source);
 
         /// <summary>        
@@ -124,12 +138,18 @@ namespace AOMapper.Interfaces
         new IMap<TDestination> Auto();
 
         /// <summary>
+        /// Compiles the map
+        /// </summary>
+        /// <returns></returns>
+        new IMap<TDestination> Compile();
+
+        /// <summary>
         /// Remaps the specified property according to specified path
         /// </summary>
         /// <param name="source"></param>
         /// <param name="destination"></param>
         /// <returns></returns>
-        new IMap<TDestination> Remap(string source, string destination);
+        new IMap<TDestination> Remap(string source, string destination, Resolver resolver = null);
 
         /// <summary>
         /// Remaps the specified property according to specified path
@@ -138,7 +158,7 @@ namespace AOMapper.Interfaces
         /// <param name="source"></param>
         /// <param name="destination"></param>
         /// <returns></returns>
-        new IMap<TDestination> Remap<TR>(string source, string destination);
+        new IMap<TDestination> Remap<TR>(string source, string destination, Resolver resolver = null);
 
         /// <summary>
         /// Registers a new method for the destination type
@@ -213,12 +233,19 @@ namespace AOMapper.Interfaces
         new IMap<TSource, TDestination> Auto();
 
         /// <summary>
+        /// Compiles the map
+        /// </summary>
+        /// <returns></returns>
+        new IMap<TSource, TDestination> Compile();
+
+        /// <summary>
         /// Remaps the specified property according to specified path
         /// </summary>
         /// <param name="source"></param>
         /// <param name="destination"></param>
+        /// <param name="resolver"></param>
         /// <returns></returns>
-        new IMap<TSource, TDestination> Remap(string source, string destination);
+        new IMap<TSource, TDestination> Remap(string source, string destination, Resolver resolver = null);
 
         /// <summary>
         /// Remaps the specified property according to specified path

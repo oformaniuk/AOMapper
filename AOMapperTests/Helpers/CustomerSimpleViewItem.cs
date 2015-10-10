@@ -1,7 +1,23 @@
 using System;
+using System.Collections.Generic;
 
 namespace AOMapperTests.Helpers
 {
+    public class CustomerSimpleViewItem3 : CustomerSimpleViewItem
+    {
+        public string NumberOfOrders { get; set; }
+    }
+
+    public class CustomerSimpleViewItem4 : CustomerSimpleViewItem
+    {
+        public Dictionary<string, string> DateTimes { get; set; } 
+    }
+
+    public class CustomerSimpleViewItem5 : CustomerSimpleViewItem
+    {
+        public DateTime[] DateTimes { get; set; }
+    }
+
     public class CustomerSimpleViewItem
     {
         public string FirstName { get; set; }

@@ -2,32 +2,25 @@
 
 namespace AOMapper.Data
 {
-    internal struct ArgArray
+    internal class ArgArray
     {
         private readonly object[] _argArray;
+        private readonly int _hashCode;
 
         public ArgArray(params object[] args)
         {
             this._argArray = args;
+            _hashCode = getHashCode();
         }
 
         public override bool Equals(object obj)
         {                        
             if (!(obj is ArgArray)) return false;
 
-            // cast object to object array
-            ArgArray comparedObject = (ArgArray)obj;
-
-            // compare the array lengths
-            if (comparedObject._argArray.Length == this._argArray.Length)
-            {
-                return !_argArray.Where((t, i) => !t.Equals(comparedObject._argArray[i])).Any();
-            }
-            else
-                return false;
+            return _hashCode == (obj as ArgArray)._hashCode;
         }
 
-        public override int GetHashCode()
+        private int getHashCode()
         {
             unchecked
             {
@@ -35,9 +28,14 @@ namespace AOMapper.Data
                 for (int i = 0; i < _argArray.Length; i++)
                 {
                     hash = hash * 16777619 ^ _argArray[i].GetHashCode();
-                }                              
+                }
                 return hash;
-            }            
+            }
+        }
+
+        public override int GetHashCode()
+        {
+            return _hashCode;
         }
     }
 }

@@ -13,7 +13,7 @@ namespace AOMapper.Interfaces
         Delegate GetterDelegate { get; }
         Delegate SetterDelegate { get; }
 
-        TR GetGeneric<T, TR>(T obj);
+        TR GetGeneric<T, TR>(T obj) where TR : class;
         void SetGeneric<T, TR>(T obj, TR value);
         bool CanSet { get; }
         bool CanGet { get; }

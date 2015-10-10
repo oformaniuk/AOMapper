@@ -2,19 +2,29 @@
 <#@ import namespace="System.IO" #>
 <#@ output extension=".nuspec" #>
 <#
-    string buildNumber;
+    string Path = Host.ResolvePath("") + "\\Properties\\version";
+    string buildNumber = "";    
     try
     {
         //If we cannot find the file, the revision number is set to zero,
         //so even if the file doesn't exists the generation will run anyway.
         //NOTE: we suppose we're not messing with the generated file
-        using(var f = File.OpenText(Host.ResolvePath("AssemblyFileVersion.cs")))
+        //using(var f = File.OpenText(Host.ResolvePath("AssemblyFileVersion.cs")))
+        //{
+            //
+            ////We're reading the previous revision number; in order to make the
+            ////code as simple as we can, we're just going to rewrite it on the first row, commented.
+            ////This is not elegant, but it's simple enough and quite effective.
+			//f.ReadLine(); f.ReadLine();
+            //buildNumber = f.ReadLine().Replace("[assembly: AssemblyInformationalVersion(\"","").Replace("\")]","");            
+        //} 
+        foreach(string l in File.ReadLines(Host.ResolvePath("AssemblyFileVersion.cs")))
         {
-            //We're reading the previous revision number; in order to make the
-            //code as simple as we can, we're just going to rewrite it on the first row, commented.
-            //This is not elegant, but it's simple enough and quite effective.
-			f.ReadLine(); f.ReadLine(); f.ReadLine(); f.ReadLine();
-            buildNumber = f.ReadLine().Replace("[assembly: AssemblyInformationalVersion(\"","").Replace("\")]","");            
+            if(l.StartsWith("[assembly: AssemblyInformationalVersion"))
+            {
+                buildNumber = l.Replace("[assembly: AssemblyInformationalVersion(\"","").Replace("\")]","");
+                break;
+            }
         }
     }catch
     {     
@@ -38,14 +48,38 @@
   </metadata>
   <files>
     <file src="**" exclude="**\*.dll;**\*.designer.cs;**\*.csproj;**\*.pdb;**\*.user;**\*.vspscc;bin\*.cs;bin\*.aspx;bin\*.config;bin\*.asax;bin\*.pubxml;**\*.nuproj;**\*.exe;**\*.number;**\**" />
+<#
+    string[] type = new string[]{"dll", "XML", "pdb"};
+    int[] ver = new int[]{35, 40, 45};
 
-    <file src="..\AOMapper\bin\net4\Release\AOMapper.dll" target="lib\net40"/>
-    <file src="..\AOMapper\bin\net4\Release\AOMapper.XML" target="lib\net40"/>
-    <file src="..\AOMapper\bin\net45\Release\AOMapper.dll" target="lib\net45"/>
-    <file src="..\AOMapper\bin\net45\Release\AOMapper.XML" target="lib\net45"/>
-    <file src="..\AOMapper\bin\net4\Portable\Release\AOMapper.dll" target="lib\portable-net40+sl5"/>
-    <file src="..\AOMapper\bin\net4\Portable\Release\AOMapper.XML" target="lib\portable-net40+sl5"/>
-    <file src="..\AOMapper\bin\net45\Portable\Release\AOMapper.dll" target="lib\portable-net45+sl5"/>
-    <file src="..\AOMapper\bin\net45\Portable\Release\AOMapper.XML" target="lib\portable-net45+sl5"/>
+    string folder;
+    using(var f = File.OpenText(Path))
+        {
+            folder = f.ReadLine().Split(',')[3];
+        }
+
+    foreach(var v in ver)
+    {   
+        var vv = "net" + v.ToString();
+        var vvv = "net" + v.ToString().Replace("0", "");
+        foreach(var t in type)
+        {                        
+            string str = "<file src=\"..\\AOMapper\\bin\\{3}\\{1}\\AOMapper.{2}\" target=\"lib\\{0}\"/>";           
+            #><#="\t\t" + string.Format(str, vv, folder, t, vvv) + "\n" #><# 
+        }
+    }
+
+    ver = new int[]{40, 45};
+    foreach(var v in ver)
+    {   
+        var vv = "net" + v.ToString();
+        var vvv = "net" + v.ToString().Replace("0", "");
+        foreach(var t in type)
+        {
+            string str = "<file src=\"..\\AOMapper\\bin\\{3}\\Portable\\{1}\\AOMapper.{2}\" target=\"lib\\portable-{0}+sl5\"/>";
+            #><#="\t\t" + string.Format(str, vv, folder, t, vvv) + "\n" #><# 
+        }
+    }    
+ #>        
   </files>
 </package>

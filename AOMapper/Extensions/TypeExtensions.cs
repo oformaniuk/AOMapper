@@ -8,5 +8,11 @@ namespace AOMapper.Extensions
         {
             return type.IsValueType ? Activator.CreateInstance(type) : null;
         }
+
+        public static object GetDefault<T>(this T obj)
+        {
+            var type = obj.GetType();
+            return type.IsValueType ? Activator.CreateInstance(type) : null;
+        }
     }
 }

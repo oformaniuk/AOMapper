@@ -23,7 +23,9 @@ namespace ProfilerTarget
             var map = RunTimedFunction((s) =>
             {
                 s.Start();
-                var o = Mapper.Create<Customer2, CustomerViewItem2>().Auto();   
+                var o = Mapper.Create<Customer2, CustomerViewItem2>();
+                o.ConfigMap(x => x.CompileInnerMaps = false);
+                o = o.Auto();
                 s.Stop();
                 return o;
             }, "Mapper initialization: ");
@@ -32,7 +34,7 @@ namespace ProfilerTarget
             {
                 Mapper.Clear();
                 s.Start();
-                var o = (IMap<Customer2, CustomerViewItem2>)Mapper.Create<Customer2, CustomerViewItem2>().Auto().Compile();
+                var o = (IMap<Customer2, CustomerViewItem2>)Mapper.Create<Customer2, CustomerViewItem2>().ConfigMap(x => x.CompileInnerMaps = true).Auto().Compile();
                 s.Stop();
                 return o;
             }, "Mapper compile: ");

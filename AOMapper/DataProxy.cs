@@ -3,10 +3,12 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Threading.Tasks;
 using AOMapper.Data;
+using AOMapper.Data.Keys;
 using AOMapper.Extensions;
+#if NET35
 using AOMapper.Helpers;
+#endif
 using AOMapper.Interfaces;
 
 namespace AOMapper
@@ -17,13 +19,13 @@ namespace AOMapper
 
         protected readonly static Type _enumerableType = typeof(IEnumerable);
 
-        protected static readonly Lazy<Dictionary<Type, Dictionary<string, IAccessObject>>> AccessObjects =
-            new Lazy<Dictionary<Type, Dictionary<string, IAccessObject>>>();
+        protected static readonly Lazy<Dictionary<TypeKey, Dictionary<StringKey, IAccessObject>>> AccessObjects =
+            new Lazy<Dictionary<TypeKey, Dictionary<StringKey, IAccessObject>>>();
 
-        protected static readonly Lazy<Dictionary<Type, Dictionary<string, MethodProperty>>> MethodsDictionary =
-            new Lazy<Dictionary<Type, Dictionary<string, MethodProperty>>>();
+        protected static readonly Lazy<Dictionary<TypeKey, Dictionary<StringKey, MethodProperty>>> MethodsDictionary =
+            new Lazy<Dictionary<TypeKey, Dictionary<StringKey, MethodProperty>>>();
 
-        public Dictionary<string, object> RawView { get; protected set; }
+        public Dictionary<StringKey, object> RawView { get; protected set; }
 
         #endregion
 
@@ -72,11 +74,12 @@ namespace AOMapper
     {
         #region Fields
 
-        private readonly Dictionary<string, IAccessObject> _accessObjects;
-        private readonly Type _type;
-        private Dictionary<string, MethodProperty> _methods;
+        private readonly Dictionary<StringKey, IAccessObject> _accessObjects;
+        private readonly TypeKey _type;
+        private Dictionary<StringKey, MethodProperty> _methods;
         private static readonly MethodInfo BuildAccessorsMethod = typeof(DataProxy<TEntity>).GetMethod("BuildAccessors", BindingFlags.Static | BindingFlags.NonPublic);
-        private readonly Dictionary<string, object> _virtualProperties = new Dictionary<string, object>();
+        private readonly Dictionary<StringKey, object> _virtualProperties = new Dictionary<StringKey, object>();
+        private readonly int _hashCode;
 
         #endregion
 
@@ -85,9 +88,11 @@ namespace AOMapper
         public DataProxy(TEntity entity)
         {
             var proxy = entity as DataProxy<TEntity>;
-            _type = proxy != null ? proxy.UnderlyingObject.GetType() : entity.GetType();           
+            _type = proxy != null ? proxy.UnderlyingObject.GetType() : entity.GetType();
 
-            RawView = new Dictionary<string, object>();
+            _hashCode = (_type != null ? _type.GetHashCode() : 0);
+
+            RawView = new Dictionary<StringKey, object>();
             if (!AccessObjects.Value.ContainsKey(_type)) 
                 BuildAccessorsMethod.MakeGenericMethod(_type).Invoke(null, new object[] {_type, this});
             _accessObjects = AccessObjects.Value[_type];
@@ -95,18 +100,20 @@ namespace AOMapper
             UnderlyingObject = entity;
 
             if (!MethodsDictionary.Value.ContainsKey(_type))
-                MethodsDictionary.Value.Add(_type, new Dictionary<string, MethodProperty>());
+                MethodsDictionary.Value.Add(_type, new Dictionary<StringKey, MethodProperty>());
 
-            _methods = new Dictionary<string, MethodProperty>(MethodsDictionary.Value[_type]);
+            _methods = new Dictionary<StringKey, MethodProperty>(MethodsDictionary.Value[_type]);
 
             Count = _accessObjects.Keys.Count;
         }
 
         public DataProxy(Type type)
         {
-            _type = type;                                        
+            _type = type;
 
-            RawView = new Dictionary<string, object>();
+            _hashCode = (_type != null ? _type.GetHashCode() : 0);
+
+            RawView = new Dictionary<StringKey, object>();
             _type = type;
             if (!AccessObjects.Value.ContainsKey(_type))
                 BuildAccessorsMethod.MakeGenericMethod(_type).Invoke(null, new object[] {_type, this});
@@ -115,26 +122,28 @@ namespace AOMapper
             UnderlyingObject = default(TEntity);
 
             if (!MethodsDictionary.Value.ContainsKey(_type))
-                MethodsDictionary.Value.Add(_type, new Dictionary<string, MethodProperty>());
+                MethodsDictionary.Value.Add(_type, new Dictionary<StringKey, MethodProperty>());
 
-            _methods = new Dictionary<string, MethodProperty>(MethodsDictionary.Value[_type]);
+            _methods = new Dictionary<StringKey, MethodProperty>(MethodsDictionary.Value[_type]);
 
             Count = _accessObjects.Keys.Count;
         }
 
         public DataProxy()
         {
-            _type = typeof (TEntity);            
+            _type = typeof (TEntity);
 
-            RawView = new Dictionary<string, object>();
+            _hashCode = (_type != null ? _type.GetHashCode() : 0);
+
+            RawView = new Dictionary<StringKey, object>();
             if (!AccessObjects.Value.ContainsKey(_type)) 
                 BuildAccessorsMethod.MakeGenericMethod(_type).Invoke(null, new object[] {_type, this});
             _accessObjects = AccessObjects.Value[_type];
 
             if (!MethodsDictionary.Value.ContainsKey(_type))
-                MethodsDictionary.Value.Add(_type, new Dictionary<string, MethodProperty>());
+                MethodsDictionary.Value.Add(_type, new Dictionary<StringKey, MethodProperty>());
 
-            _methods = new Dictionary<string, MethodProperty>(MethodsDictionary.Value[_type]);
+            _methods = new Dictionary<StringKey, MethodProperty>(MethodsDictionary.Value[_type]);
 
             Count = _accessObjects.Keys.Count;
         }
@@ -142,8 +151,8 @@ namespace AOMapper
         #endregion
 
         #region Properties
-        
-        public Dictionary<string, MethodProperty> Methods
+
+        public Dictionary<StringKey, MethodProperty> Methods
         {
             get { return _methods; }
             private set { _methods = value; }
@@ -164,7 +173,7 @@ namespace AOMapper
         {
             get
             {
-                return AccessObjects.Value[_type].Keys.AsEnumerable();
+                return AccessObjects.Value[_type].Keys.Select(o => o.Value);
             }
         }
 
@@ -279,112 +288,7 @@ namespace AOMapper
             return GetEnumerator();
         }
 
-        #endregion
-
-        #region Type generation
-#if !PORTABLE
-
-        /// <summary>
-        /// Generates a new object from specified meta-data, including all properties and virtual properties.
-        /// </summary>
-        /// <returns></returns>
-        public object Generate(bool fillValues = true)
-        {
-            List<FieldMetadata> metadatas =
-                _virtualProperties.Select(o => new FieldMetadata
-                {
-                    FieldName = o.Key,
-                    FieldType = o.Value.GetType()
-                }).ToList();
-
-            var type = TypeGenerator.GetResultType(_type, metadatas);
-            if (!fillValues) return Activator.CreateInstance(type);
-
-            var result = Create(Activator.CreateInstance(type));
-            foreach (var o in result)
-            {
-                result[o] = this[o];
-            }
-
-            return result.UnderlyingObject;
-        }
-
-        /// <summary>
-        /// Generates a new object from specified meta-data, including all properties and virtual properties.
-        /// </summary>
-        /// <returns></returns>
-        public T Generate<T>(bool fillValues = true)
-            where T : TEntity
-        {
-            List<FieldMetadata> metadatas =
-                _virtualProperties.Select(o => new FieldMetadata
-                {
-                    FieldName = o.Key,
-                    FieldType = o.Value.GetType()
-                }).ToList();
-
-            var type = TypeGenerator.GetResultType(typeof (T), metadatas);
-            if (!fillValues) return (T) Activator.CreateInstance(type);
-
-            var result = Create(Activator.CreateInstance(type));
-            foreach (var o in result)
-            {
-                result[o] = this[o];
-            }
-
-            return (T) result.UnderlyingObject;
-        }
-
-        /// <summary>
-        /// Generates a new object from specified meta-data, including all properties and virtual properties.
-        /// </summary>
-        /// <returns></returns>
-        public object Generate(TEntity obj)
-        {
-            List<FieldMetadata> metadatas =
-                _virtualProperties.Select(o => new FieldMetadata
-                {
-                    FieldName = o.Key,
-                    FieldType = o.Value.GetType()
-                }).ToList();
-
-            var type = TypeGenerator.GetResultType(_type, metadatas);
-            var result = Create(Activator.CreateInstance(type));
-
-            foreach (var o in result)
-            {
-                result[o] = this[obj, o];
-            }
-
-            return result.UnderlyingObject;
-        }        
-
-        /// <summary>
-        /// Generates a new object from specified meta-data, including all properties and virtual properties.
-        /// </summary>
-        /// <returns></returns>
-        public T Generate<T>(T obj)
-            where T : TEntity
-        {
-            List<FieldMetadata> metadatas =
-                _virtualProperties.Select(o => new FieldMetadata
-                {
-                    FieldName = o.Key,
-                    FieldType = o.Value.GetType()
-                }).ToList();
-
-            var type = TypeGenerator.GetResultType(typeof (T), metadatas);
-            var result = Create(Activator.CreateInstance(type));
-
-            foreach (var o in result)
-            {
-                result[o] = this[obj, o];
-            }
-
-            return (T) result.UnderlyingObject;
-        }
-#endif
-        #endregion
+        #endregion        
 
         #region Gettes of the additional info
 
@@ -398,50 +302,50 @@ namespace AOMapper
             return _accessObjects[name].GetGetter<TEntity, object>();
         }
 
-        internal object GetReflectedGetter(string name, Type type)
+        internal object GetReflectedGetter(StringKey name, Type type)
         {
             return this.GetType().GetMethod("GetGetterGeneric", BindingFlags.NonPublic | BindingFlags.Instance)
                 .MakeGeneric(type)
                 .Invoke(this, new object[] {name});
         }
 
-        internal object GetReflectedSetter(string name, Type type)
+        internal object GetReflectedSetter(StringKey name, Type type)
         {
             return this.GetType().GetMethod("GetSetterGeneric", BindingFlags.NonPublic | BindingFlags.Instance)
                 .MakeGeneric(type)
                 .Invoke(this, new object[] { name });
         }
 
-        internal object GetReflectedConvertedGetter(string name, Type type)
+        internal object GetReflectedConvertedGetter(StringKey name, Type type)
         {
             return this.GetType().GetMethod("GetGetterConverted", BindingFlags.NonPublic | BindingFlags.Instance)
                 .MakeGeneric(type)
                 .Invoke(this, new object[] { name });
         }
 
-        internal object GetReflectedConvertedSetter(string name, Type type)
+        internal object GetReflectedConvertedSetter(StringKey name, Type type)
         {
             return this.GetType().GetMethod("GetSetterConverted", BindingFlags.NonPublic | BindingFlags.Instance)
                 .MakeGeneric(type)
                 .Invoke(this, new object[] { name });
         }
 
-        internal Func<TEntity, TR> GetGetterGeneric<TR>(string name)
+        internal Func<TEntity, TR> GetGetterGeneric<TR>(StringKey name)
         {
             return _accessObjects[name].GetGetter<TEntity, TR>();
         }
 
-        internal Action<TEntity, TR> GetSetterGeneric<TR>(string name)
+        internal Action<TEntity, TR> GetSetterGeneric<TR>(StringKey name)
         {
             return _accessObjects[name].GetSetter<TEntity, TR>();
         }
 
-        internal Action<TEntity, object> GetSetterConverted<TR>(string name)
+        internal Action<TEntity, object> GetSetterConverted<TR>(StringKey name)
         {
             return _accessObjects[name].GetSetter<TEntity, TR>().Convert<TEntity, TR, TEntity, object>();
         }
 
-        internal Func<TEntity, object> GetGetterConverted<TR>(string name)
+        internal Func<TEntity, object> GetGetterConverted<TR>(StringKey name)
         {
             return _accessObjects[name].GetGetter<TEntity, TR>().Convert<TEntity, TR, TEntity, object>();
         }
@@ -512,21 +416,21 @@ namespace AOMapper
             return this;
         }
 
-        private static void BuildAccessors<T>(Type type, DataProxy<TEntity> obj)
+        private static void BuildAccessors<T>(TypeKey type, DataProxy<TEntity> obj)
         {
             if (AccessObjects.Value.ContainsKey(type)) return;
 
-            AccessObjects.Value.Add(type, new Dictionary<string, IAccessObject>());
+            AccessObjects.Value.Add(type, new Dictionary<StringKey, IAccessObject>());
             var buildAccessor = typeof(DataProxy<TEntity>).GetMethod("BuildAccessor", BindingFlags.NonPublic | BindingFlags.Static);
 
-            foreach (var o in type.GetProperties().Where(o => o.CanRead && o.CanWrite))
+            foreach (var o in type.Value.GetProperties().Where(o => o.CanRead && o.CanWrite))
             {                
                 buildAccessor.MakeGeneric(type, o.PropertyType)
                     .Invoke(null, new object[]{type, o});
             }
         }
 
-        private static void BuildAccessor<T, TR>(Type type, PropertyInfo o)
+        private static void BuildAccessor<T, TR>(TypeKey type, PropertyInfo o)
         {
             if (o.GetIndexParameters().Any()) return; // indexers are not supported
 
@@ -559,7 +463,7 @@ namespace AOMapper
                 throw new Exception();                
             }
 
-            return (Func<T, TR>)Delegate.CreateDelegate(typeof(Func<T, TR>), propertyInfo.GetGetMethod());
+            return Delegate.CreateDelegate(typeof(Func<T, TR>), propertyInfo.GetGetMethod()) as Func<T, TR>;
         }
 
         private static Action<T, TR> GetValueSetter<T, TR>(PropertyInfo propertyInfo, Type type)
@@ -572,10 +476,10 @@ namespace AOMapper
             return (Action<T, TR>)Delegate.CreateDelegate(typeof(Action<T, TR>), propertyInfo.GetSetMethod());
         }        
 
-        private static void InitObjects<T>(ref Dictionary<string, AccessObject<T, object>> dictionary)
+        private static void InitObjects<T>(ref Dictionary<StringKey, AccessObject<T, object>> dictionary)
         {
             var type = typeof(T);
-            foreach (var o in AccessObjects.Value[type].As<Dictionary<string, object>>())
+            foreach (var o in AccessObjects.Value[type].As<Dictionary<StringKey, object>>())
             {
                 dictionary.Add(o.Key, o.Value.As<AccessObject<T, object>>());
             }
@@ -608,6 +512,28 @@ namespace AOMapper
         {
             return obj.UnderlyingObject;
         }
+        #endregion
+
+        #region General overloads
+
+        protected bool Equals(DataProxy<TEntity> other)
+        {
+            return _hashCode == other._hashCode;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj)) return false;
+            if (ReferenceEquals(this, obj)) return true;
+            if (obj.GetType() != this.GetType()) return false;
+            return Equals(obj as DataProxy<TEntity>);
+        }
+
+        public override int GetHashCode()
+        {
+            return _hashCode;
+        }
+
         #endregion
     }
 }

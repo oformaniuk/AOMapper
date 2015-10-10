@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>AOMapper</id>
-    <version>1.0.4.2</version>
+    <version>1.0.5.2</version>
     <title>AOMapper</title>
     <authors>Oleh Formaniuk</authors>
     <owners>Oleh Formaniuk</owners>
@@ -15,14 +15,21 @@
   </metadata>
   <files>
     <file src="**" exclude="**\*.dll;**\*.designer.cs;**\*.csproj;**\*.pdb;**\*.user;**\*.vspscc;bin\*.cs;bin\*.aspx;bin\*.config;bin\*.asax;bin\*.pubxml;**\*.nuproj;**\*.exe;**\*.number;**\**" />
-
-    <file src="..\AOMapper\bin\net4\Release\AOMapper.dll" target="lib\net40"/>
-    <file src="..\AOMapper\bin\net4\Release\AOMapper.XML" target="lib\net40"/>
-    <file src="..\AOMapper\bin\net45\Release\AOMapper.dll" target="lib\net45"/>
-    <file src="..\AOMapper\bin\net45\Release\AOMapper.XML" target="lib\net45"/>
-    <file src="..\AOMapper\bin\net4\Portable\Release\AOMapper.dll" target="lib\portable-net40+sl5"/>
-    <file src="..\AOMapper\bin\net4\Portable\Release\AOMapper.XML" target="lib\portable-net40+sl5"/>
-    <file src="..\AOMapper\bin\net45\Portable\Release\AOMapper.dll" target="lib\portable-net45+sl5"/>
-    <file src="..\AOMapper\bin\net45\Portable\Release\AOMapper.XML" target="lib\portable-net45+sl5"/>
+		<file src="..\AOMapper\bin\net35\Release\AOMapper.dll" target="lib\net35"/>
+		<file src="..\AOMapper\bin\net35\Release\AOMapper.XML" target="lib\net35"/>
+		<file src="..\AOMapper\bin\net35\Release\AOMapper.pdb" target="lib\net35"/>
+		<file src="..\AOMapper\bin\net4\Release\AOMapper.dll" target="lib\net40"/>
+		<file src="..\AOMapper\bin\net4\Release\AOMapper.XML" target="lib\net40"/>
+		<file src="..\AOMapper\bin\net4\Release\AOMapper.pdb" target="lib\net40"/>
+		<file src="..\AOMapper\bin\net45\Release\AOMapper.dll" target="lib\net45"/>
+		<file src="..\AOMapper\bin\net45\Release\AOMapper.XML" target="lib\net45"/>
+		<file src="..\AOMapper\bin\net45\Release\AOMapper.pdb" target="lib\net45"/>
+		<file src="..\AOMapper\bin\net4\Portable\Release\AOMapper.dll" target="lib\portable-net40+sl5"/>
+		<file src="..\AOMapper\bin\net4\Portable\Release\AOMapper.XML" target="lib\portable-net40+sl5"/>
+		<file src="..\AOMapper\bin\net4\Portable\Release\AOMapper.pdb" target="lib\portable-net40+sl5"/>
+		<file src="..\AOMapper\bin\net45\Portable\Release\AOMapper.dll" target="lib\portable-net45+sl5"/>
+		<file src="..\AOMapper\bin\net45\Portable\Release\AOMapper.XML" target="lib\portable-net45+sl5"/>
+		<file src="..\AOMapper\bin\net45\Portable\Release\AOMapper.pdb" target="lib\portable-net45+sl5"/>
+        
   </files>
 </package>

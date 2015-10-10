@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Reflection;
+using AOMapper.Data.Keys;
 using AOMapper.Extensions;
 using AOMapper.Interfaces;
 
@@ -23,7 +24,8 @@ namespace AOMapper.Data
         /// Gets the value of the mapped parent object's property.
         /// </summary>       
         /// <returns></returns>
-        public TResult GetValue<TResult>(Expression<Func<TDestination, TResult>> expression)
+        /// <exception cref="MissingMemberException"/>
+        public TResult GetValue<TResult>(Expression<Func<TDestination, TResult>> expression) where TResult : class
         {
             var memberExpression = expression.Body as MemberExpression;
             if (memberExpression == null) throw new MissingMemberException();
@@ -37,6 +39,7 @@ namespace AOMapper.Data
         /// </summary>
         /// <param name="expression"></param>
         /// <param name="value"></param>
+        /// <exception cref="MissingMemberException"></exception>
         public void SetValue<TResult>(Expression<Func<TDestination, TResult>> expression, TResult value)
         {
             var memberExpression = expression.Body as MemberExpression;
@@ -51,7 +54,7 @@ namespace AOMapper.Data
     {
         internal MappingObject(IEnumerable<FieldMetadata> metadatas)
         {
-            FieldMetadatas = new Dictionary<string, EditableKeyValuePair<object, IAccessObject>>();
+            FieldMetadatas = new Dictionary<StringKey, Map<object, IAccessObject>>();
             foreach (var fieldMetadata in metadatas)
             {
                 _accessorBuilderMethod.MakeGeneric(fieldMetadata.DeclareType, fieldMetadata.FieldType)
@@ -109,7 +112,8 @@ namespace AOMapper.Data
         /// </summary>        
         /// <param name="expression"></param>
         /// <returns></returns>
-        public TResult GetValue<TSource, TResult>(Expression<Func<TSource, TResult>> expression)
+        /// <exception cref="MissingMemberException"></exception>
+        public TResult GetValue<TSource, TResult>(Expression<Func<TSource, TResult>> expression) where TResult : class
         {
             var memberExpression = expression.Body as MemberExpression;
             if (memberExpression == null) throw new MissingMemberException();
@@ -123,6 +127,7 @@ namespace AOMapper.Data
         /// </summary>
         /// <param name="expression"></param>
         /// <param name="value"></param>
+        /// <exception cref="MissingMemberException"></exception>
         public void SetValue<TSource, TResult>(Expression<Func<TSource, TResult>> expression, TResult value)
         {
             var memberExpression = expression.Body as MemberExpression;
@@ -137,22 +142,22 @@ namespace AOMapper.Data
         private readonly MethodInfo _accessorBuilderMethod =
             typeof(MappingObject).GetMethod("BuildAccessors", BindingFlags.NonPublic | BindingFlags.Static);
 
-        internal readonly Dictionary<string, EditableKeyValuePair<object, IAccessObject>> FieldMetadatas;
+        internal readonly Dictionary<StringKey, Map<object, IAccessObject>> FieldMetadatas;
         #endregion
 
         #region Helpers
 
         private static Action<T, TR> _convertDelegateToAction<T, TR>(Delegate f)
         {
-            return (arg1, r) => ((Action<T, TR>)f)(arg1, r);
+            return (arg1, r) => (f as Action<T, TR>)(arg1, r);
         }
 
         private static Func<T, TR> _convertDelegateToFunc<T, TR>(Delegate f)
         {
-            return arg => ((Func<T, TR>) f)(arg);
+            return arg => (f as Func<T, TR>)(arg);
         }
         private static void BuildAccessors<T, TRet>(
-            Dictionary<string, EditableKeyValuePair<object, IAccessObject>> dictionary, string name, object o,
+            Dictionary<StringKey, Map<object, IAccessObject>> dictionary, string name, object o,
             Delegate getter, Delegate setter)
         {
             var obj = new AccessObject<T, TRet>
@@ -161,7 +166,7 @@ namespace AOMapper.Data
                 Setter = _convertDelegateToAction<T, TRet>(setter),
             };
 
-            dictionary[name] = new EditableKeyValuePair<object, IAccessObject>(o, obj);
+            dictionary[name] = new Map<object, IAccessObject>(o, obj);
         }
 
         #endregion

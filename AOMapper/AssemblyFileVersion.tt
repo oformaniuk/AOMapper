@@ -1,0 +1,36 @@
+﻿<#@ template debug="false" hostspecific="True" language="C#" #>
+<#@ import namespace="System.IO" #>
+<#@ output extension=".cs" #>
+<#
+    string Path = Host.ResolvePath("") + "\\Properties\\version";
+    int revisionNumber;
+	int buildNumber;
+    int devBuild;
+    try
+    {        
+        using(var f = File.OpenText(Path))
+        {                      
+            string[] s = f.ReadLine().Split(',');
+            revisionNumber = int.Parse(s[1]); 			
+            buildNumber = int.Parse(s[0]);
+            devBuild = int.Parse(s[2]);
+        }
+
+        File.WriteAllText(Path, buildNumber + "," + revisionNumber + "," + devBuild + ",Release");
+
+    }catch
+    {     
+        revisionNumber = 0; 
+		buildNumber = 0;
+        devBuild = 0;
+        File.WriteAllText(Path, buildNumber + "," + revisionNumber + "," + devBuild + ",Release");
+    }
+#>
+
+#if !DEPLOY && !FIX && !DEV
+using System.Reflection;
+
+[assembly: AssemblyInformationalVersion("1.0.<#=buildNumber#>.<#=revisionNumber#>")]
+[assembly: AssemblyVersion("1.0.<#=buildNumber#>.<#=revisionNumber#>")]
+[assembly: AssemblyFileVersion("1.0.<#=buildNumber#>.<#=revisionNumber#>")]
+#endif

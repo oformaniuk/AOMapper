@@ -4,6 +4,16 @@ using System.Linq;
 
 namespace AOMapperTests.Helpers
 {
+    public class Customer4 : Customer
+    {
+        public Dictionary<int, DateTime> DateTimes { get; set; } 
+    }
+
+    public class Customer5 : Customer
+    {
+        public List<DateTime> DateTimes { get; set; }
+    }
+
     public class Customer
     {
         public string FirstName { get; set; }

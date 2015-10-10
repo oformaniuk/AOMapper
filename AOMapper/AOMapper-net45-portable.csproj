@@ -34,35 +34,96 @@
     <WarningLevel>4</WarningLevel>
     <DocumentationFile>bin\net45\Portable\Release\AOMapper.XML</DocumentationFile>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Deploy|AnyCPU'">
+    <OutputPath>bin\net45\Portable\Deploy\</OutputPath>
+    <DefineConstants>TRACE;PORTABLE</DefineConstants>
+    <DocumentationFile>bin\net45\Portable\Deploy\AOMapper.XML</DocumentationFile>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'DeployFix|AnyCPU'">
+    <OutputPath>bin\net45\Portable\DeployFix\</OutputPath>
+    <DefineConstants>TRACE;PORTABLE</DefineConstants>
+    <DocumentationFile>bin\net45\Portable\DeployFix\AOMapper.XML</DocumentationFile>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'DeployDev|AnyCPU'">
+    <OutputPath>bin\net45\Portable\DeployDev\</OutputPath>
+    <DefineConstants>TRACE;PORTABLE</DefineConstants>
+    <DocumentationFile>bin\net45\Portable\DeployDev\AOMapper.XML</DocumentationFile>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
   <ItemGroup>
     <!-- A reference to the entire .NET Framework is automatically included -->
     <None Include="Key.snk" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AssemblyFileVersion.cs">
+      <DependentUpon>TextTransform.exe</DependentUpon>
+    </Compile>
+    <Compile Include="AssemblyFileVersionDeploy.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>TextTransform.exe</DependentUpon>
+    </Compile>
+    <Compile Include="AssemblyFileVersionDeployDev.cs">
+      <DependentUpon>TextTransform.exe</DependentUpon>
+    </Compile>
+    <Compile Include="AssemblyFileVersionDeployFix.cs">
+      <DependentUpon>TextTransform.exe</DependentUpon>
+    </Compile>
     <Compile Include="DataProxy.cs" />
     <Compile Include="Data\AccessObject.cs" />
     <Compile Include="Data\ArgArray.cs" />
-    <Compile Include="Data\EditableKeyValuePair.cs" />
+    <Compile Include="Data\CodeTreeNode.cs" />
     <Compile Include="Data\FieldMetadata.cs" />
+    <Compile Include="Data\Keys\AbstractKey.cs" />
+    <Compile Include="Data\Keys\StringKey.cs" />
+    <Compile Include="Data\Keys\TypeKey.cs" />
+    <Compile Include="Data\Map.cs" />
     <Compile Include="Data\MapObject.cs" />
     <Compile Include="Data\MappingObject.cs" />
     <Compile Include="Data\MethodProperty.cs" />
     <Compile Include="Data\PropertyMap.cs" />
+    <Compile Include="Exceptions\InvalidTypeBindingException.cs" />
     <Compile Include="Extensions\FuncExtensions.cs" />
     <Compile Include="Extensions\ObjectExtensions.cs" />
     <Compile Include="Extensions\TypeExtensions.cs" />
-    <Compile Include="Helpers\Linker.cs" />
-    <Compile Include="Helpers\TypeGenerator.cs" />
     <Compile Include="Interfaces\IAccessObject.cs" />
     <Compile Include="Interfaces\IMap.cs" />
     <Compile Include="Interfaces\IPathProvider.cs" />
+    <Compile Include="Interfaces\Keys\IKey.cs" />
     <Compile Include="Mapper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Resolvers\ArrayResolver.cs" />
     <Compile Include="Resolvers\ListResolver.cs" />
     <Compile Include="Resolvers\Resolver.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="TextTransform.exe" />
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Helpers\" />
+  </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
+  <PropertyGroup>
+    <PreBuildEvent>
+    </PreBuildEvent>
+  </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
