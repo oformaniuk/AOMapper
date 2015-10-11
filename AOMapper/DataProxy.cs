@@ -449,8 +449,8 @@ namespace AOMapper
                 AccessObjects.Value[type].Add(o.Name, new AccessObject<T, TR>
                 {
                     PropertyInfo = o,
-                    Getter = o.CanRead ? GetValueGetter<T, TR>(o, type) : null,
-                    Setter = o.CanWrite ? GetValueSetter<T, TR>(o, type) : null,
+                    Getter = o.CanRead && o.GetGetMethod() != null ? GetValueGetter<T, TR>(o, type) : null,
+                    Setter = o.CanWrite && o.GetSetMethod() != null ? GetValueSetter<T, TR>(o, type) : null,
                     CanCreate = o.PropertyType.GetConstructor(new Type[0]) != null
                 });
             }
