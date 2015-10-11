@@ -303,13 +303,23 @@ namespace AOMapper
                                 (source.Value.Value.Contains(_config.Separator.ToString()) &&
                                  dest.Key.Equals(source.Value.Value.Replace(_config.Separator.ToString(), string.Empty))))
                             {
-                                Remap(GetPropertyNameFromPath(source.Value.Value), GetPropertyNameFromPath(dest.Value.Value));
+                                Remap(GetPropertyNameFromPath(source.Value.Value),
+                                    GetPropertyNameFromPath(dest.Value.Value));
                             }
-                            else if (dest.Key.Equals(source.Key) && dest.Value.Type != null && !dest.Value.Type.Equals(source.Value.Type))
+                            else if (dest.Key.Equals(source.Key) && dest.Value.Type != null &&
+                                     !dest.Value.Type.Equals(source.Value.Type))
                             {
-                                if (!(typeof(IList).IsAssignableFrom(dest.Value.Type.Value) && typeof(IList).IsAssignableFrom(source.Value.Type.Value)))
-                                    Remap(GetPropertyNameFromPath(source.Value.Value), GetPropertyNameFromPath(dest.Value.Value), Resolver.Create(source.Value.Type, dest.Value.Type, this));
+                                if (
+                                    !(typeof (IList).IsAssignableFrom(dest.Value.Type.Value) &&
+                                      typeof (IList).IsAssignableFrom(source.Value.Type.Value)))
+                                    Remap(GetPropertyNameFromPath(source.Value.Value),
+                                        GetPropertyNameFromPath(dest.Value.Value),
+                                        Resolver.Create(source.Value.Type, dest.Value.Type, this));
                             }
+                        }
+                        catch (InvalidTypeBindingException e)
+                        {
+                            throw;
                         }
                         catch (Exception e)
                         {
