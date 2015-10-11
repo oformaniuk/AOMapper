@@ -246,6 +246,7 @@ namespace AOMapper
 
             private MapperInnerClass<TSource, TDestination> Auto()
             {
+                
                 _destinationCodeTree = new Dictionary<StringKey, CodeTreeNode>();
                 GenerateCodeTree<TDestination>(_destinationCodeTree, _config.InitialyzeNullValues);
                 _sourceCodeTree = new Dictionary<StringKey, CodeTreeNode>();
@@ -295,17 +296,24 @@ namespace AOMapper
                 foreach (var dest in destinationMap)
                 {
                     foreach (var source in sourceMap)
-                    {                       
-                        if (dest.Key.Equals(source.Key) && !dest.Value.Equals(source.Value) ||
-                            (source.Value.Value.Contains(_config.Separator.ToString()) &&
-                             dest.Key.Equals(source.Value.Value.Replace(_config.Separator.ToString(), string.Empty))))
+                    {
+                        try
                         {
-                            Remap(GetPropertyNameFromPath(source.Value.Value), GetPropertyNameFromPath(dest.Value.Value));
+                            if (dest.Key.Equals(source.Key) && !dest.Value.Equals(source.Value) ||
+                                (source.Value.Value.Contains(_config.Separator.ToString()) &&
+                                 dest.Key.Equals(source.Value.Value.Replace(_config.Separator.ToString(), string.Empty))))
+                            {
+                                Remap(GetPropertyNameFromPath(source.Value.Value), GetPropertyNameFromPath(dest.Value.Value));
+                            }
+                            else if (dest.Key.Equals(source.Key) && dest.Value.Type != null && !dest.Value.Type.Equals(source.Value.Type))
+                            {
+                                if (!(typeof(IList).IsAssignableFrom(dest.Value.Type.Value) && typeof(IList).IsAssignableFrom(source.Value.Type.Value)))
+                                    Remap(GetPropertyNameFromPath(source.Value.Value), GetPropertyNameFromPath(dest.Value.Value), Resolver.Create(source.Value.Type, dest.Value.Type, this));
+                            }
                         }
-                        else if (dest.Key.Equals(source.Key) && dest.Value.Type != null && !dest.Value.Type.Equals(source.Value.Type))
+                        catch (Exception e)
                         {
-                            if (!(typeof(IList).IsAssignableFrom(dest.Value.Type.Value) && typeof(IList).IsAssignableFrom(source.Value.Type.Value)))
-                                Remap(GetPropertyNameFromPath(source.Value.Value), GetPropertyNameFromPath(dest.Value.Value), Resolver.Create(source.Value.Type, dest.Value.Type, this));
+                            // ignoring - auto-mapping failed
                         }
                     }
                 }                
