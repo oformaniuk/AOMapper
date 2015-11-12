@@ -10,8 +10,11 @@ namespace AOMapper.Data
 {
     public class CallStack<TSource, TDestination> //: Stack<CallStackNode>
     {
-        private readonly Dictionary<StringKey, CallStack<TSource, TDestination>> _callTree
-            = new Dictionary<StringKey, CallStack<TSource, TDestination>>();
+        //private readonly Dictionary<StringKey, CallStack<TSource, TDestination>> _callTree
+        //    = new Dictionary<StringKey, CallStack<TSource, TDestination>>();
+
+        private readonly List<CallStack<TSource, TDestination>> _callTree
+            = new List<CallStack<TSource, TDestination>>();
 
         protected Type _thisType;        
 
@@ -26,11 +29,40 @@ namespace AOMapper.Data
 
         public TSource GlobalSource { get; set; }
 
+        //public Func<object, object, object> Build(Func<object, object, object> compiledMap)
+        //{
+        //    object value = null;//destination ?? Value;
+        //    if (Action != null)
+        //    {
+        //        try
+        //        {
+        //            var c = compiledMap;
+        //            compiledMap = (source, destination) =>
+        //            {
+        //                var r = c(source, destination);
+        //                value = Action(r, source);
+        //                return value;
+        //            };                    
+        //        }
+        //        catch (NullReferenceException e)
+        //        {
+        //            //throw new ValueIsNotInitializedException("", e, Parent.Route, source != null ? source.GetType() : null, destination != null ? destination.GetType() : null);
+        //        }
+        //    }
+
+        //    foreach (var stack in _callTree)
+        //    {
+        //        compiledMap = stack.Value.Build(compiledMap);
+        //    }
+
+        //    return compiledMap;
+        //}
+
         public void Call(object source, object destination)
         {
-            object value = destination ?? Value;
-            if (Action != null)
-            {
+            object value;// = destination ?? Value;
+            //if (Action != null)
+            //{
                 try
                 {
                     value = Action(destination, source);
@@ -39,58 +71,29 @@ namespace AOMapper.Data
                 {
                     throw new ValueIsNotInitializedException("", e, Parent.Route, source != null ? source.GetType() : null, destination != null ? destination.GetType() : null);
                 }
-            }
+            //}
 
-            var nullMaps = _callTree
-                .Where(o => o.Value.Map == null || o.Value.Map.Value.MappingRoute.SourceRoute == null)
-                .ToArray();
-
-            var groups = _callTree
-                .Where(o => o.Value.Map != null)
-                .Where(o => o.Value.Map.Value.MappingRoute.SourceRoute != null)
-                .Select(o => new
-                {
-                    Stack = o, 
-                    SourceParent = o.Value.Map.Value.MappingRoute.SourceRoute.Parent,
-                    Source = o.Value.Map.Value.MappingRoute.SourceRoute,
-                    M = o.Value.Map
-                    //Parent = RouteHelpers.GetParent(o.Value.Map.Key.MappingRoute.Map, o.Value.Map.Key.Path),
-                }).GroupBy(o => o.SourceParent);
-
-            foreach (var map in nullMaps)
+            for (int i = 0; i < _callTree.Count; i++)
             {
-                map.Value.GlobalSource = GlobalSource;
-                map.Value.Call(GlobalSource, value);
+                _callTree[i].Call(source, value);
             }
 
-            // _callTree.Where(o => groups.All(x => x.Stack.Key != o.Key)).Select(o => o.Value)
-            foreach (var group in groups)
-            {
-                var sourceObject = (TSource) group.Key.GetConverteDelegate.As<Func<TSource, object>>()(GlobalSource);
-
-                //if (group.Key.Resolver != null)
-                    //group.Key.Resolver.Resolve(s, ref s);
-
-                foreach (var stack in group)
-                {
-                    var s = stack.Source._dataProxy[sourceObject, stack.Source.Key];//_GetConverteDelegate.As<Func<TSource, object>>()(sourceObject);
-
-                    stack.Stack.Value.GlobalSource = GlobalSource;
-                    stack.Stack.Value.Call(s, value);   
-                }                
-            }
-
+            //foreach (var stack in _callTree)
+            //{
+            //    stack.Call(source, value);
+            //}
 
         }
 
         public void AddAction(Func<object, object, object> action)
         {
-            var a = Action;
-            Action = (o, o1) => 
-            {
-                var r = a(o, o1);
-                return action(r, o1);
-            }; //+= action;
+            //var a = Action;
+            //Action = (o, o1) => 
+            //{
+            //    var r = a(o, o1);
+            //    return action(r, o1);
+            //}; //+= action;
+            Action += action;
         }
 
         internal CallStack(StringKey route, CallStack<TSource, TDestination> parent, object value,
@@ -104,16 +107,16 @@ namespace AOMapper.Data
             AdditionalMaps = maps;
             Map = map;
             GlobalSource = Parent == null ? default(TSource) : Parent.GlobalSource;
-            if (string.IsNullOrEmpty(route.Value))
-            {
-                if (Parent != null && Parent._callTree.Keys.Any())
-                    route = Parent._callTree.Keys.Last() + 1;
-                else
-                    route = "1";
-            }
+            //if (string.IsNullOrEmpty(route.Value))
+            //{
+            //    if (Parent != null && Parent._callTree.Keys.Any())
+            //        route = Parent._callTree.Keys.Last() + 1;
+            //    else
+            //        route = "1";
+            //}
 
             if(Parent != null)
-                Parent._callTree[route] = this;
+                Parent._callTree/*[route]*/.Add(this);// = this;
         }        
     }    
 }

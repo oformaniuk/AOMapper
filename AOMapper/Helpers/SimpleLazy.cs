@@ -1,28 +1,27 @@
 ﻿using System;
+using AOMapper.Data;
 
 namespace AOMapper.Helpers
 {
-    public class SimpleLazy
+    public class SimpleLazy<TSource>
     {
-        private readonly Func<object> _creator;
+        private readonly Func<TSource, object, MappingRoute, object> _creator;
         private object _value;
         
-        public bool Initialized { get; private set; }
+        public bool Initialized { get; private set; }        
 
-        public object Value
+        public object Get(object globalSource, object source, MappingRoute route)
         {
-            get
+            if (!Initialized)
             {
-                if (Initialized) return _value;
-
-                _value = _creator();
+                _value = _creator((TSource) globalSource, source, route);
                 Initialized = true;
-
-                return _value;
             }
+
+            return _value;
         }
 
-        public SimpleLazy(Func<object> creator)            
+        public SimpleLazy(Func<TSource, object, MappingRoute, object> creator)            
         {
             _creator = creator;
             Initialized = false;

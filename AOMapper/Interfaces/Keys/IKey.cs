@@ -2,6 +2,6 @@
 {
     public interface IKey<out T>
     {
-        T Value { get; }
+        T Value { get; }        
     }
 }

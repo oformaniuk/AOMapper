@@ -1,13 +1,20 @@
 ﻿using System.Collections.Generic;
 using System.Diagnostics;
+using AOMapper.Interfaces.Keys;
 
 namespace AOMapper.Data.Keys
 {
     [DebuggerDisplay("{Value}")]    
-    public class StringKey : AbstractKey<string>
-    {        
-        private StringKey(string value) : base(value)
-        {            
+    public struct StringKey : IKey<string>
+                            //AbstractKey<string>
+    {
+        private readonly int HashCode;
+
+        private StringKey(string value)
+            :this()//: base(value)
+        {
+            Value = value;
+            HashCode = value.GetHashCode();
         }
 
         /// <summary>
@@ -31,7 +38,7 @@ namespace AOMapper.Data.Keys
         /// </returns>
         public static implicit operator string(StringKey value)
         {
-            return value == null ? null : value.Value;
+            return value.Value;
         }
 
         public override string ToString()
@@ -44,5 +51,12 @@ namespace AOMapper.Data.Keys
             if (ReferenceEquals(null, obj)) return false;
             return HashCode == obj.GetHashCode();
         }
+
+        public override int GetHashCode()
+        {
+            return HashCode;
+        }        
+
+        public string Value { get; private set; }
     }
 }

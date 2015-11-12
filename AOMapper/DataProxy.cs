@@ -92,7 +92,7 @@ namespace AOMapper
             var proxy = entity as DataProxy<TEntity>;
             _type = proxy != null ? proxy.UnderlyingObject.GetType() : entity.GetType();
 
-            _hashCode = (_type != null ? _type.GetHashCode() : 0);
+            _hashCode = _type.GetHashCode();//(_type != null ? _type.GetHashCode() : 0);
 
             RawView = new Dictionary<StringKey, object>();
             if (!AccessObjects.Value.ContainsKey(_type)) 
@@ -113,7 +113,7 @@ namespace AOMapper
         {
             _type = type;
 
-            _hashCode = (_type != null ? _type.GetHashCode() : 0);
+            _hashCode = _type.GetHashCode();//(_type != null ? _type.GetHashCode() : 0);
 
             RawView = new Dictionary<StringKey, object>();
             _type = type;
@@ -135,7 +135,7 @@ namespace AOMapper
         {
             _type = typeof (TEntity);
 
-            _hashCode = (_type != null ? _type.GetHashCode() : 0);
+            _hashCode = _type.GetHashCode();//(_type != null ? _type.GetHashCode() : 0);
 
             RawView = new Dictionary<StringKey, object>();
             if (!AccessObjects.Value.ContainsKey(_type)) 
@@ -307,6 +307,18 @@ namespace AOMapper
         public Func<TEntity, object> GetGetter(string name)
         {
             return _accessObjects[name].GetGetter<TEntity, object>();
+        }
+
+        public Func<TEntity, object> GetPlainGetter(StringKey name)
+        {
+            var accessObject = _accessObjects[name];
+            return e => accessObject.Get(e);
+        }
+
+        public Action<TEntity, object> GetPlainSetter(StringKey name)
+        {
+            var accessObject = _accessObjects[name];
+            return (e, o) => accessObject.Set(e, o);
         }
 
         internal object GetReflectedGetter(StringKey name, Type type)

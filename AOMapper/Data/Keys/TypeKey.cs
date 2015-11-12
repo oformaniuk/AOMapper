@@ -1,18 +1,24 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using AOMapper.Interfaces.Keys;
 
 namespace AOMapper.Data.Keys
 {
     [DebuggerDisplay("{Value}")]
-    public class TypeKey : AbstractKey<Type>
+    public struct TypeKey : IKey<Type>
+                //AbstractKey<Type>
     {
+        private readonly int HashCode;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="TypeKey"/> class.
         /// </summary>
         /// <param name="value">The value.</param>
-        private TypeKey(Type value) : base(value)
-        {                
+        private TypeKey(Type value) : this()//base(value)
+        {
+            Value = value;
+            HashCode = value == null ? 0 : value.GetHashCode();
         }
 
         /// <summary>
@@ -39,10 +45,22 @@ namespace AOMapper.Data.Keys
             return value.Value;
         }
 
+        public override string ToString()
+        {
+            return Value.ToString();
+        }
+
         public override bool Equals(object obj)
         {
             if (ReferenceEquals(null, obj)) return false;
             return HashCode == obj.GetHashCode();
         }
+
+        public override int GetHashCode()
+        {
+            return HashCode;
+        }
+
+        public Type Value { get; private set; }
     }
 }

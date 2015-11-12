@@ -24,15 +24,15 @@ namespace ProfilerTarget
 
         public void Run()
         {
-            var map = RunTimedFunction((s) =>
-            {
-                s.Start();
-                var o = Mapper.Create<Customer2, CustomerViewItem2>();
-                o.ConfigMap(x => x.CompileInnerMaps = false);
-                o = o.Auto();
-                s.Stop();
-                return o;
-            }, "Mapper initialization: ");
+            //var map = RunTimedFunction((s) =>
+            //{
+            //    s.Start();
+            //    var o = Mapper.Create<Customer2, CustomerViewItem2>();
+            //    o.ConfigMap(x => x.CompileInnerMaps = false);
+            //    o = o.Auto();
+            //    s.Stop();
+            //    return o;
+            //}, "Mapper initialization: ");
 
             var mapCompiled = RunTimedFunction((s) =>
             {
@@ -47,18 +47,18 @@ namespace ProfilerTarget
                 return o;
             }, "Mapper compile: ");
 
-            RunTimedFunction<object>((s) =>
-            {
-                s.Start();
-                AutoMapper.Mapper.CreateMap<SimpleObjectInner, SimpleObjectViewItemInner>();
-                AutoMapper.Mapper.CreateMap<SimpleObject, SimpleObjectViewItem>()
-                    .ForMember(o => o.Inners, o => o.MapFrom(simpleObject => AutoMapper.Mapper.Map<IList<SimpleObjectInner>, IList<SimpleObjectViewItemInner>>(simpleObject.Inners)));
-                AutoMapper.Mapper.CreateMap<Customer2, CustomerViewItem2>()
-                    .ForMember(o => o.ViewItems, x => x.MapFrom(customer2 => AutoMapper.Mapper.Map<SimpleObject[], SimpleObjectViewItem[]>(customer2.ViewItems)));
-                s.Start();
+            //RunTimedFunction<object>((s) =>
+            //{
+            //    s.Start();
+            //    AutoMapper.Mapper.CreateMap<SimpleObjectInner, SimpleObjectViewItemInner>();
+            //    AutoMapper.Mapper.CreateMap<SimpleObject, SimpleObjectViewItem>()
+            //        .ForMember(o => o.Inners, o => o.MapFrom(simpleObject => AutoMapper.Mapper.Map<IList<SimpleObjectInner>, IList<SimpleObjectViewItemInner>>(simpleObject.Inners)));
+            //    AutoMapper.Mapper.CreateMap<Customer2, CustomerViewItem2>()
+            //        .ForMember(o => o.ViewItems, x => x.MapFrom(customer2 => AutoMapper.Mapper.Map<SimpleObject[], SimpleObjectViewItem[]>(customer2.ViewItems)));
+            //    s.Start();
 
-                return null;
-            }, "AutoMapper initialization: ");                                                 
+            //    return null;
+            //}, "AutoMapper initialization: ");                                                 
 
             Console.WriteLine();
             Console.WriteLine();
@@ -67,13 +67,13 @@ namespace ProfilerTarget
             {
                 PopulateCustomers(x);
 
-                var mapperResult = RunTimedFunction((s) => RunMapper(map, s), string.Format("Mapper with {0} elements: ", x));
-                //var mapperCompiledResult = RunTimedFunction((s) => RunMapper(mapCompiled, s), string.Format("Mapper (Compiled) with {0} elements: ", x));
-                var autoMapperResult = RunTimedFunction(RunAutoMapper<Customer2, CustomerViewItem2>, string.Format("AutoMapper with {0} elements: ", x));                
-                var manualResult = RunTimedFunction(RunManual2, string.Format("Manual with {0} elements: ", x));
+                //var mapperResult = RunTimedFunction((s) => RunMapper(map, s), string.Format("Mapper with {0} elements: ", x));
+                var mapperCompiledResult = RunTimedFunction((s) => RunMapper(mapCompiled, s), string.Format("Mapper (Compiled) with {0} elements: ", x));
+                //var autoMapperResult = RunTimedFunction(RunAutoMapper<Customer2, CustomerViewItem2>, string.Format("AutoMapper with {0} elements: ", x));                
+                //var manualResult = RunTimedFunction(RunManual2, string.Format("Manual with {0} elements: ", x));
 
-                GC.Collect(2);
-                Thread.Sleep(20);
+                //GC.Collect(2);
+                //Thread.Sleep(20);
 
                 Console.WriteLine();
                 Console.WriteLine();

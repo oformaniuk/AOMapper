@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -141,9 +142,11 @@ namespace AOMapper
             {
                 _config = new Config(this);
 
+                var @delegate = (Func<TSource, TSource>) (o => o);
                 _sourceMappingRoute = new MappingRoute(this, typeof (TSource))
                 {
-                    GetDelegate = (Func<TSource, TSource>) (o => o)
+                    GetDelegate = @delegate,
+                    GetConverteDelegate = @delegate.Convert<TSource, TSource, TSource, object>()
                 };
                 _destinationMappingRoute = new MappingRoute(this, typeof (TDestination))
                 {
@@ -205,11 +208,86 @@ namespace AOMapper
                 return false;
             }
 
-            private void MapRemaperPropertiesNonCompiled(TSource source, object obj, MappingRoute mappingRoute)
+            //private void MapRemaperPropertiesNonCompiled(TSource source, object obj, MappingRoute mappingRoute)
+            //{
+            //    var proxy = DataProxy.Create(obj);
+            //    var map = _map.AdditionalMaps
+            //        .FirstOrDefault(o => o.Value.Path.Equals(mappingRoute.Route));
+
+            //    object value = null;
+            //    var destinationPropertyType = proxy.GetPropertyInfo(mappingRoute.Key).PropertyType;
+
+            //    if (map != null)
+            //    {
+            //        if (map.Key.Path == null)
+            //        {
+            //            object v;
+            //            if (!IgnoreValue(() => map.Key.Invoker(source), out v))
+            //                value = proxy[mappingRoute.Key] = v;
+            //        }
+            //        else
+            //        {
+            //            if (map.Key.Resolver != null)
+            //            {
+            //                object v;
+            //                if (!IgnoreValue(() => map.Key.Invoker(source), out v))
+            //                {
+            //                    map.Key.Resolver.Resolve(v, ref value);
+            //                    proxy[mappingRoute.Key] = value;
+            //                }
+            //            }
+            //            else
+            //            {
+            //                var sourcePropertyType = map.Key.Type;
+            //                var canMap = sourcePropertyType == destinationPropertyType;
+            //                if (canMap)
+            //                {
+            //                    object v;
+            //                    if (!IgnoreValue(() => map.Key.Invoker(source), out v))
+            //                        value = proxy[mappingRoute.Key] = v;
+            //                }
+            //                else
+            //                {
+            //                    var resolver = Resolver.Create(sourcePropertyType, destinationPropertyType, this);
+            //                    if (resolver != null)
+            //                    {
+            //                        object v;
+            //                        if (!IgnoreValue(() => map.Key.Invoker(source), out v))
+            //                        {
+            //                            resolver.Resolve(v, ref value);
+            //                            proxy[mappingRoute.Key] = value;
+            //                        }
+            //                    }
+            //                    else
+            //                    {
+            //                        throw new InvalidTypeBindingException(map.Value.Path, sourcePropertyType,
+            //                            destinationPropertyType);
+            //                    }
+            //                }
+            //            }
+            //        }
+            //    }
+            //    else
+            //    {
+            //        if (proxy[mappingRoute.Key] == null && _config.InitialyzeNullValues)
+            //        {
+            //            var prop = destinationPropertyType;
+            //            value = proxy[mappingRoute.Key] = Activator.CreateInstance(prop);
+            //        }
+            //    }
+
+            //    foreach (var route in mappingRoute)
+            //    {
+            //        MapRemaperPropertiesNonCompiled(source, value, route);
+            //    }
+            //}            
+
+            private void MapRemaperPropertiesNonCompiled(object source, object obj, MappingRoute mappingRoute, 
+                SimpleLazy<TSource> provider, TSource globalSource, Map<MapObject<Func<TSource, object>>, MapObject<Action<TDestination, object>>> map)
             {
                 var proxy = DataProxy.Create(obj);
-                var map = _map.AdditionalMaps
-                    .FirstOrDefault(o => o.Value.Path.Equals(mappingRoute.Route));
+                //var map = _map.AdditionalMaps
+                //    .FirstOrDefault(o => o.Value.Path.Equals(mappingRoute.Route));
 
                 object value = null;
                 var destinationPropertyType = proxy.GetPropertyInfo(mappingRoute.Key).PropertyType;
@@ -219,7 +297,7 @@ namespace AOMapper
                     if (map.Key.Path == null)
                     {
                         object v;
-                        if (!IgnoreValue(() => map.Key.Invoker(source), out v))
+                        if (!IgnoreValue(() => provider.Get(globalSource, source, mappingRoute), out v))
                             value = proxy[mappingRoute.Key] = v;
                     }
                     else
@@ -227,7 +305,7 @@ namespace AOMapper
                         if (map.Key.Resolver != null)
                         {
                             object v;
-                            if (!IgnoreValue(() => map.Key.Invoker(source), out v))
+                            if (!IgnoreValue(() => provider.Get(globalSource, source, mappingRoute), out v))
                             {
                                 map.Key.Resolver.Resolve(v, ref value);
                                 proxy[mappingRoute.Key] = value;
@@ -240,7 +318,7 @@ namespace AOMapper
                             if (canMap)
                             {
                                 object v;
-                                if (!IgnoreValue(() => map.Key.Invoker(source), out v))
+                                if (!IgnoreValue(() => provider.Get(globalSource, source, mappingRoute), out v))
                                     value = proxy[mappingRoute.Key] = v;
                             }
                             else
@@ -249,7 +327,7 @@ namespace AOMapper
                                 if (resolver != null)
                                 {
                                     object v;
-                                    if (!IgnoreValue(() => map.Key.Invoker(source), out v))
+                                    if (!IgnoreValue(() => provider.Get(globalSource, source, mappingRoute), out v))
                                     {
                                         resolver.Resolve(v, ref value);
                                         proxy[mappingRoute.Key] = value;
@@ -273,61 +351,194 @@ namespace AOMapper
                     }
                 }
 
-                foreach (var route in mappingRoute)
+                GroupMappingRoutes(source, mappingRoute, globalSource, value);
+
+                //foreach (var route in mappingRoute)
+                //{
+                //    MapRemaperPropertiesNonCompiled(source, value, route);
+                //}
+            }
+
+            private void GroupMappingRoutes(object source, MappingRoute mappingRoute, TSource globalSource, object value)
+            {
+                foreach (
+                    var route in
+                        mappingRoute.Where(o => o.SourceRoute == null /*|| string.IsNullOrEmpty(o.SourceRoute.Parent.Key)*/))
                 {
-                    MapRemaperPropertiesNonCompiled(source, value, route);
+                    var mmap = _map.AdditionalMaps
+                        .FirstOrDefault(o => o.Value.Path.Equals(route.Route));
+
+                    var p = new SimpleLazy<TSource>((global, s, r) => mmap.Key.Invoker(global));
+
+                    MapRemaperPropertiesNonCompiled(source, value, route, p, globalSource, mmap);
                 }
-            }            
+
+                var groups = mappingRoute
+                    .Where(o => o.SourceRoute != null)
+                    //.Where(o => !string.IsNullOrEmpty(o.SourceRoute.Parent.Key))
+                    .GroupBy(o => o.SourceRoute.Parent);
+
+                foreach (var group in groups)
+                {                    
+                    var getter = @group.Key.GetConverteDelegate.As<Func<TSource, object>>();
+                    var p = new SimpleLazy<TSource>((global, s, r) => getter(global));
+
+                    foreach (var grp in @group.GroupBy(o => o.SourceRoute))
+                    {                        
+                        //var rr = route;
+                        var pp = new SimpleLazy<TSource>((g, s, r) =>
+                        {
+                            var v = p.Get(g, s, r);
+                            return r.SourceRoute._dataProxy[v, r.SourceRoute.Key];
+                        });
+
+                        foreach (var route in grp)
+                        {
+                            var mmap = _map.AdditionalMaps
+                                .FirstOrDefault(o => o.Value.Path.Equals(route.Route));
+
+                            MapRemaperPropertiesNonCompiled(source, value, route, pp, globalSource, mmap);
+                        }
+                    }                    
+                }
+            }
+
+            private void GroupMappingRoutesCompiled(object source, MappingRoute mappingRoute, 
+                TSource globalSource, object value, CallStack<TSource, TDestination> parentStack)
+            {
+                foreach (
+                    var route in
+                        mappingRoute.Where(o => o.SourceRoute == null /*|| string.IsNullOrEmpty(o.SourceRoute.Parent.Key)*/))
+                {
+                    var mmap = _map.AdditionalMaps
+                        .FirstOrDefault(o => o.Value.Path.Equals(route.Route));
+
+                    var p = new SimpleLazy<TSource>((global, s, r) => mmap.Key.Invoker(global));
+
+                    MapRemaperProperties(source, value, route, p, globalSource, mmap, parentStack);
+                }
+
+                var groups = mappingRoute
+                    .Where(o => o.SourceRoute != null)
+                    //.Where(o => !string.IsNullOrEmpty(o.SourceRoute.Parent.Key))
+                    .GroupBy(o => o.SourceRoute.Parent);
+
+                foreach (var group in groups)
+                {
+                    var getter = @group.Key.GetConverteDelegate.As<Func<TSource, object>>();
+                    var p = new SimpleLazy<TSource>((global, s, r) => getter(global));
+
+                    foreach (var grp in @group.GroupBy(o => o.SourceRoute))
+                    {
+                        SimpleLazy<TSource> pp;
+                        //var get = grp.Key.SourceRoute._dataProxy.GetGetter(grp.Key.SourceRoute.Key);
+                        if (grp.Key.Resolver != null)
+                        {
+                            var resolver = grp.Key.Resolver;                            
+                            pp = new SimpleLazy<TSource>((g, s, r) =>
+                            {
+                                var v = p.Get(g, s, r);
+                                var ss = r.SourceRoute._dataProxy[v, r.SourceRoute.Key];
+                                object result = null;
+                                resolver.Resolve(ss, ref result);
+
+                                return result;
+                            });
+                        }
+                        else
+                        {
+                            pp = new SimpleLazy<TSource>((g, s, r) =>
+                            {
+                                var v = p.Get(g, s, r);
+                                return r.SourceRoute._dataProxy[v, r.SourceRoute.Key];
+                            }); 
+                        }                       
+
+                        foreach (var route in grp)
+                        {
+                            var mmap = _map.AdditionalMaps
+                                .FirstOrDefault(o => o.Value.Path.Equals(route.Route));
+
+                            MapRemaperProperties(source, value, route, pp, globalSource, mmap, parentStack);
+                        }
+                    }
+                }
+            }
 
             private void MapRemaperProperties(object source, object obj, MappingRoute mappingRoute,
-                CallStack<TSource, TDestination> callStack = null, Map<MapObject<Func<TSource, object>>, MapObject<Action<TDestination, object>>> map = null)
-            {                                
-                map = map ?? _map.AdditionalMaps
-                    .FirstOrDefault(o => o.Value.Path.Equals(mappingRoute.Route));
+                SimpleLazy<TSource> provider, TSource globalSource, Map<MapObject<Func<TSource, object>>, 
+                MapObject<Action<TDestination, object>>> map,
+                CallStack<TSource, TDestination> parentStack)
+            {
+                var stack = new CallStack<TSource, TDestination>("", parentStack, obj, null);
 
-                var stack = new CallStack<TSource, TDestination>(mappingRoute.Route, callStack ?? _callStack, obj, _map.AdditionalMaps, map);
-
-                var proxy = obj != null
-                    ? DataProxy.Create(obj)
-                    : mappingRoute.GetRoot().GetRoute(stack.Route)._dataProxy;
+                var proxy = mappingRoute._dataProxy;//DataProxy.Create(obj);
+                //var map = _map.AdditionalMaps
+                //    .FirstOrDefault(o => o.Value.Path.Equals(mappingRoute.Route));
 
                 object value = null;
                 var destinationPropertyType = proxy.GetPropertyInfo(mappingRoute.Key).PropertyType;
 
+                //var getter = proxy.GetGetter(mappingRoute.Key);
+                //var setter = proxy.GetSetter(mappingRoute.Key);
+
+                var getter = proxy.GetPlainGetter(mappingRoute.Key);
+                var setter = proxy.GetPlainSetter(mappingRoute.Key);
+
                 if (map != null)
                 {
                     if (map.Key.Path == null)
-                    {
-                        var key = mappingRoute.SourceRoute != null ? mappingRoute.SourceRoute.Key : mappingRoute.Key;
-                        stack.AddAction((o, s) =>
-                        {
-                            //object v;
-                            //if (!IgnoreValue(() => map.Key.Invoker((TSource) s), out v))
-                            //{
-                            value = proxy[o, mappingRoute.Key] = mappingRoute.SourceRoute._dataProxy[s, key];
-                            //}
+                    {                        
+                        if(_config.IgnoreDefaultValues)
+                        {                            
+                            stack.AddAction((d, s) =>
+                            {
+                                object v;
+                                if (!IgnoreValue(() => provider.Get(s, s, mappingRoute), out v))
+                                    value = proxy[d, mappingRoute.Key] = v;
 
-                            return value;
-                        });
-                        //value = proxy[mappingRoute.Key] = map.Key.Invoker(source);
+                                return value;
+                            });
+                        }
+                        else
+                        {
+                            stack.AddAction(
+                                (d, s) => /*proxy[d, mappingRoute.Key] = provider.Get(s, s, mappingRoute)*/
+                                {
+                                    var v = provider.Get(s, s, mappingRoute);
+                                    setter(d, v);
+                                    return v;
+                                });
+                        }                     
                     }
                     else
                     {
                         if (map.Key.Resolver != null)
                         {
-                            stack.AddAction((o, s) =>
+                            if(_config.IgnoreDefaultValues)
                             {
-                                //object v;
-                                //if (!IgnoreValue(() => map.Key.Invoker((TSource) s), out v))
-                                //{
-                                    //map.Key.Resolver.Resolve(s, ref value);
-                                value =
-                                    proxy[o, mappingRoute.Key] =
-                                        mappingRoute.SourceRoute._dataProxy[s, mappingRoute.SourceRoute.Key];//s;
-                                //}
+                                stack.AddAction((d, s) =>
+                                {
+                                    object v;
+                                    if (!IgnoreValue(() => provider.Get(s, s, mappingRoute), out v))
+                                    {
+                                        //map.Key.Resolver.Resolve(v, ref value);
+                                        proxy[d, mappingRoute.Key] = value;
+                                    }
 
-                                return value;
-                            });
+                                    return value;
+                                }); 
+                            }
+                            else
+                            {
+                                stack.AddAction((d, s) =>
+                                {
+                                    //proxy[d, mappingRoute.Key] = provider.Get(s, s, mappingRoute)
+                                    var v = provider.Get(s, s, mappingRoute);
+                                    setter(d, v);
+                                    return v;
+                                });
+                            }                           
                         }
                         else
                         {
@@ -335,32 +546,58 @@ namespace AOMapper
                             var canMap = sourcePropertyType == destinationPropertyType;
                             if (canMap)
                             {
-                                stack.AddAction((o, s) =>
+                                if(_config.IgnoreDefaultValues)
                                 {
-                                    //object v;
-                                    //if (!IgnoreValue(() => map.Key.Invoker((TSource) s), out v))
-                                    //{
-                                    value = proxy[o, mappingRoute.Key] = mappingRoute.SourceRoute._dataProxy[s, mappingRoute.SourceRoute.Key];
-                                    //}
-                                    return value;
-                                });
+                                    stack.AddAction((d, s) =>
+                                    {
+                                        object v;
+                                        if (!IgnoreValue(() => provider.Get(s, s, mappingRoute), out v))
+                                            value = proxy[d, mappingRoute.Key] = v;
+
+                                        return value;
+                                    }); 
+                                }
+                                else
+                                {
+                                    stack.AddAction((d, s) =>
+                                    {
+                                        //proxy[d, mappingRoute.Key] = provider.Get(s, s, mappingRoute)
+                                        var v = provider.Get(s, s, mappingRoute);
+                                        setter(d, v);
+                                        return v;
+                                    });
+                                }                               
                             }
                             else
                             {
                                 var resolver = Resolver.Create(sourcePropertyType, destinationPropertyType, this);
                                 if (resolver != null)
                                 {
-                                    stack.AddAction((o, s) =>
+                                    if(_config.IgnoreDefaultValues)
                                     {
-                                        object v;
-                                        if (!IgnoreValue(() => mappingRoute.SourceRoute._dataProxy[s, mappingRoute.SourceRoute.Key], out v))
+                                        stack.AddAction((d, s) =>
                                         {
-                                            resolver.Resolve(v, ref value);
-                                            proxy[o, mappingRoute.Key] = value;
-                                        }
+                                            object v;
+                                            if (!IgnoreValue(() => provider.Get(s, source, mappingRoute), out v))
+                                            {
+                                                resolver.Resolve(v, ref value);
+                                                proxy[d, mappingRoute.Key] = value;
+                                            }
 
-                                        return value;
-                                    });
+                                            return value;
+                                        });  
+                                    }
+                                    else
+                                    {
+                                        stack.AddAction((d, s) =>
+                                        {
+                                            resolver.Resolve(provider.Get(s, source, mappingRoute), ref value);
+                                            //proxy[d, mappingRoute.Key] = value;
+                                            setter(d, value);
+
+                                            return value;
+                                        });
+                                    }                                
                                 }
                                 else
                                 {
@@ -373,65 +610,32 @@ namespace AOMapper
                 }
                 else
                 {
-                    if (_config.InitialyzeNullValues)
+                    if(_config.InitialyzeNullValues)
                     {
-                        stack.AddAction((o, s) =>
+                        stack.AddAction((d, s) =>
                         {
-                            if (proxy[o, mappingRoute.Key] == null)
+                            if (/*proxy[d, mappingRoute.Key]*/ getter(d) == null/* && _config.InitialyzeNullValues*/)
                             {
                                 var prop = destinationPropertyType;
-                                value = proxy[o, mappingRoute.Key] = Activator.CreateInstance(prop);
-                            }
-                            else
-                            {
-                                value = proxy[o, mappingRoute.Key];
+                                //value = proxy[d, mappingRoute.Key] = Activator.CreateInstance(prop);
+                                value = Activator.CreateInstance(prop);
+                                setter(d, value);
                             }
 
                             return value;
-                        });
+                        });  
                     }
                     else
                     {
-                        stack.AddAction((o, s) => proxy[o, mappingRoute.Key]);
-                    }
+                        stack.AddAction((d, s) => getter(d));
+                    }                  
                 }
 
-                var groups = mappingRoute
-                    .Where(o => o.Route != null)
-                    .Where(o => o.SourceRoute != null)
-                    .Select(o =>
-                    {
-                        var firstOrDefault = _map.AdditionalMaps
-                            .FirstOrDefault(x => x.Value.Path.Equals(o.Route));
-                        return new
-                        {
-                            MappingRoute = o,
-                            Destination = o.Route,
-                            Source = firstOrDefault != null ? firstOrDefault.Key.Path : null,
-                            Map = firstOrDefault
-                        };
-                    })
-                    .Where(o => o.Source != null)
-                    .ToArray();
-
-                foreach (var route in mappingRoute.Except(groups.Select(o => o.MappingRoute)))
-                {
-                    MapRemaperProperties(source, value, route, stack);
-                }
-
-                var grouped = groups.GroupBy(o => o.MappingRoute.SourceRoute.Parent);
-
-                foreach (var g in grouped)
-                {
-                    foreach (var o in g)
-                    {
-                        MapRemaperProperties(source, value, o.MappingRoute, stack);
-                    }
-                }
+                GroupMappingRoutesCompiled(source, mappingRoute, globalSource, value, stack);
 
                 //foreach (var route in mappingRoute)
                 //{
-                //    MapRemaperProperties(source, value, route, stack);
+                //    MapRemaperPropertiesNonCompiled(source, value, route);
                 //}
             }
 
@@ -446,10 +650,12 @@ namespace AOMapper
 
                 MapNonRemaperPropertiesNonCompiled(sourceObject, destinationObject, destination, source);
 
-                foreach (var route in _destinationMappingRoute)
-                {
-                    MapRemaperPropertiesNonCompiled(sourceObject, destinationObject, route);
-                }
+
+                GroupMappingRoutes(null, _destinationMappingRoute, sourceObject, destinationObject);
+                //foreach (var route in _destinationMappingRoute)
+                //{
+                //    MapRemaperPropertiesNonCompiled(sourceObject, destinationObject, route);
+                //}
 
                 return destinationObject;
             }
@@ -550,14 +756,28 @@ namespace AOMapper
                 for (var index = 0; index < nonRemapedDests.Length; index++)
                 {
                     var o = nonRemapedDests[index];
-                    stack.AddAction((x, s) =>
-                    {
-                        object v;
-                        if (!IgnoreValue(() => source[s, o], out v))
-                            destination[x, o] = v;
+                    var getter = source.GetPlainGetter(o);
+                    var setter = destination.GetPlainSetter(o);
 
-                        return x;
-                    });
+                    if(_config.IgnoreDefaultValues)
+                    {
+                        stack.AddAction((x, s) =>
+                        {
+                            object v;
+                            if (!IgnoreValue(() => source[s, o], out v))
+                                destination[x, o] = v;
+
+                            return x;
+                        });
+                    }
+                    else
+                    {
+                        stack.AddAction((d, s) =>
+                        {
+                            setter((TDestination) d, getter((TSource) s));
+                            return d;
+                        });
+                    }
                 }
 
                 nonRemapedDests = _map.NonResolvedProperties;
@@ -565,25 +785,42 @@ namespace AOMapper
                 {
                     var o = nonRemapedDests[index];
 
+                    var getter = source.GetPlainGetter(o);
+                    var setter = destination.GetPlainSetter(o);
+
                     var sourceType = source.GetPropertyInfo(o).PropertyType;
                     var destinationType = destination.GetPropertyInfo(o).PropertyType;
 
                     var resolver = Resolver.Create(sourceType, destinationType, this);
                     if (resolver != null)
                     {
-                        stack.AddAction((x, s) =>
+                        if(_config.IgnoreDefaultValues)
                         {
-                            object value = null;
-
-                            object v;
-                            if (!IgnoreValue(() => source[s, o], out v))
+                            stack.AddAction((x, s) =>
                             {
-                                resolver.Resolve(v, ref value);
-                                destination[x, o] = value;
-                            }
+                                object value = null;
 
-                            return x;
-                        });
+                                object v;
+                                if (!IgnoreValue(() => source[s, o], out v))
+                                {
+                                    resolver.Resolve(v, ref value);
+                                    destination[x, o] = value;
+                                }
+
+                                return x;
+                            });
+                        }
+                        else
+                        {                            
+                            stack.AddAction((d, s) =>
+                            {
+                                object value = null;
+                                resolver.Resolve(getter((TSource) s), ref value);
+                                setter((TDestination) d, value);
+
+                                return d;
+                            });
+                        }
                     }
                     else
                     {
@@ -596,25 +833,42 @@ namespace AOMapper
                 {
                     var o = nonRemapedDests[index];
 
+                    var getter = source.GetPlainGetter(o);
+                    var setter = destination.GetPlainSetter(o);
+
                     var sourceType = source.GetPropertyInfo(o).PropertyType;
                     var destinationType = destination.GetPropertyInfo(o).PropertyType;
 
                     var resolver = Resolver.Create(sourceType, destinationType, this);
                     if (resolver != null)
                     {
-                        stack.AddAction((x, s) =>
+                        if(_config.IgnoreDefaultValues)
                         {
-                            object value = null;
-
-                            object v;
-                            if (!IgnoreValue(() => source[s, o], out v))
+                            stack.AddAction((x, s) =>
                             {
-                                resolver.Resolve(v, ref value);
-                                destination[x, o] = value;
-                            }
+                                object value = null;
 
-                            return x;
-                        });
+                                object v;
+                                if (!IgnoreValue(() => source[s, o], out v))
+                                {
+                                    resolver.Resolve(v, ref value);
+                                    destination[x, o] = value;
+                                }
+
+                                return x;
+                            });
+                        }
+                        else
+                        {
+                            stack.AddAction((d, s) =>
+                            {
+                                object value = null;
+                                resolver.Resolve(getter((TSource) s), ref value);
+                                setter((TDestination) d, value);
+
+                                return d;
+                            });
+                        }
                     }
                     else
                     {
@@ -788,7 +1042,7 @@ namespace AOMapper
                                 Remap(GetPropertyNameFromPath(source.Value.Value),
                                     GetPropertyNameFromPath(dest.Value.Value));
                             }
-                            else if (dest.Key.Equals(source.Key) && dest.Value.Type != null &&
+                            else if (dest.Key.Equals(source.Key) && /*dest.Value.Type != null &&*/
                                      !dest.Value.Type.Equals(source.Value.Type))
                             {
                                 if (
@@ -897,45 +1151,29 @@ namespace AOMapper
 
             private IMap _compile()
             {
-                if (/*_compiledMap != null*/ true) return this;
+                if (_compiledMap != null) return this;
 
                 MapNonRemaperProperties(default(TSource), default(TDestination), _map.Destination, _map.Source);
 
-                var groups = _destinationMappingRoute
-                    .Where(o => o.Route != null)
-                    .Where(o => o.SourceRoute != null)
-                    .Select(o =>
-                    {
-                        var firstOrDefault = _map.AdditionalMaps
-                            .FirstOrDefault(x => x.Value.Path.Equals(o.Route));
-                        return new
-                        {
-                            MappingRoute = o,
-                            Destination = o.Route,
-                            Source = firstOrDefault != null ? firstOrDefault.Key.Path : null,
-                            Map = firstOrDefault
-                        };
-                    })
-                    .Where(o => o.Source != null)
-                    .ToArray();                    
+                GroupMappingRoutesCompiled(default(TSource), _destinationMappingRoute, default(TSource), default(TDestination), _callStack);
 
-                foreach (var route in _destinationMappingRoute.Except(groups.Select(o => o.MappingRoute)))
-                {                    
-                    MapRemaperProperties(default(TSource), default(TDestination), route);
-                }
-
-                var grouped = groups.GroupBy(o => o.MappingRoute.SourceRoute.Parent);
-
-                foreach (var g in grouped)
+                Func<object, object, object> func = (s, d) =>
                 {
-                    foreach (var o in g)
-                    {
-                        MapRemaperProperties(default(TSource), default(TDestination), o.MappingRoute, _callStack, o.Map);   
-                    }                    
-                }
+                    if (ReferenceEquals(d, default(TDestination)))
+                        d = new TDestination();
+
+                    _callStack.GlobalSource = (TSource) s;
+
+                    return d;
+                };
+                    
+                //func = _callStack.Build(func);
+
+                //_compiledMap = (source, destination) => (TDestination)func(source, destination);
 
                 _compiledMap = (source, destination) =>
                 {
+                    //return (TDestination)func(source, destination);
                     if (ReferenceEquals(destination, default(TDestination)))
                         destination = new TDestination();
 
@@ -1311,6 +1549,9 @@ namespace AOMapper
 
                         destinationMapObject.MappingRoute.SourceRoute = sourceMapObject.MappingRoute;
 
+                        destinationMapObject.MappingRoute.AutoGenerated = false;
+                        sourceMapObject.MappingRoute.AutoGenerated = false;
+
                         var mapObject =
                             new Map<MapObject<Func<TSource, object>>, MapObject<Action<TDestination, object>>>(
                                 sourceMapObject, destinationMapObject);
@@ -1352,7 +1593,7 @@ namespace AOMapper
             {
                 Delegate tempSource;
                 var router = _destinationMappingRoute;
-                var mappingRoute = MappingRoute.Parse(destination, router, initObjects: false);
+                var mappingRoute = MappingRoute.Parse(destination, router, resolver: resolver, initObjects: false);
                 return new MapObject<Action<TDestination, object>>
                 {
                     Path = destination,
@@ -1368,9 +1609,14 @@ namespace AOMapper
                 MappingRoute destination, Func<TSource, TRR> selector = null)
             {
                 var router = _sourceMappingRoute;
-                var mappingRoute = selector == null ? MappingRoute.Parse(source, router, null, destination) : null;
+                var mappingRoute = selector == null ? MappingRoute.Parse(source, router, resolver, destination) : null;
 
-                return new MapObject<Func<TSource, object>>
+                if (resolver != null && mappingRoute != null)
+                {
+                    mappingRoute.Resolver = resolver;
+                }
+
+                var mapObject = new MapObject<Func<TSource, object>>
                 {
                     Path = source,
                     Invoker =
@@ -1381,6 +1627,8 @@ namespace AOMapper
                     Type = typeof (TR),
                     MappingRoute = mappingRoute
                 };
+
+                return mapObject;
             }
 
             #endregion

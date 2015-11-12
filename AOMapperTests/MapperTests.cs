@@ -638,8 +638,8 @@ namespace AOMapperTests
                     new Resolver<CustomerSubClass, CustomerSubViewItem>(c => new CustomerSubViewItem()))
                 //.Remap(o => o.Sub.Name, o => o.SubSubItem.Name)
                 .Remap(o => o.Sub.Name, o => o.SubSubItem.Description)
-                .RemapFrom(o => o.FirstName, c => c.FirstName + 1);
-                //.Compile();
+                .RemapFrom(o => o.FirstName, c => c.FirstName + 1)
+                .Compile();
 
             var customer = GetCustomerFromDB();
             var customerViewMapper = map.Do(customer);
