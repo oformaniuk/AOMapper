@@ -17,6 +17,20 @@ namespace AOMapper.Interfaces
         IMap Auto();
 
         /// <summary>
+        /// Ignores the specified source path during auto mapping.
+        /// </summary>
+        /// <param name="source"></param>
+        /// <returns></returns>
+        IMap IgnoreSource(string source);
+
+        /// <summary>
+        /// Ignores the destination path during auto mapping.
+        /// </summary>
+        /// <param name="destination"></param>
+        /// <returns></returns>
+        new IMap IgnoreDestination(string destination);
+
+        /// <summary>
         /// Compiles the map
         /// </summary>
         /// <returns></returns>
@@ -37,43 +51,7 @@ namespace AOMapper.Interfaces
         /// <param name="source"></param>
         /// <param name="destination"></param>
         /// <returns></returns>
-        IMap Remap<TR>(string source, string destination, Resolver resolver = null);        
-
-        /// <summary>
-        /// Registers a new method for the destination type
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="name"></param>
-        /// <param name="method"></param>
-        /// <returns></returns>
-        IMap RegisterDestinationMethod<T>(string name, T method);
-
-        /// <summary>
-        /// Registers a new global method
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="name"></param>
-        /// <param name="method"></param>
-        /// <returns></returns>
-        IMap RegisterGlobalMethod<T>(string name, T method);
-
-        /// <summary>
-        /// Registers a new method for the source type
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="name"></param>
-        /// <param name="method"></param>
-        /// <returns></returns>
-        IMap RegisterSourceMethod<T>(string name, T method);
-
-        /// <summary>
-        /// Registers a new method for all available targets
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="name"></param>
-        /// <param name="method"></param>
-        /// <returns></returns>
-        IMap RegisterMethod<T>(string name, T method);
+        IMap Remap<TR>(string source, string destination, Resolver resolver = null);                
 
         /// <summary>
         /// Executes mapping from target to destination object        
@@ -108,14 +86,7 @@ namespace AOMapper.Interfaces
         /// </summary>
         /// <param name="source"></param>
         /// <returns></returns>
-        object Do(object source);
-
-        /// <summary>        
-        /// Generates mapping proxy object, that allows to perform real-time mapping using parent gettes and setters.
-        /// </summary>
-        /// <param name="obj"></param>
-        /// <returns></returns>
-        MappingObject GenerateProxy(object obj);
+        object Do(object source);        
 
         /// <summary>
         /// Provides access to map configuration
@@ -138,6 +109,20 @@ namespace AOMapper.Interfaces
         new IMap<TDestination> Auto();
 
         /// <summary>
+        /// Ignores the specified source path during auto mapping.
+        /// </summary>
+        /// <param name="source"></param>
+        /// <returns></returns>
+        new IMap<TDestination> IgnoreSource(string source);
+
+        /// <summary>
+        /// Ignores the destination path during auto mapping.
+        /// </summary>
+        /// <param name="destination"></param>
+        /// <returns></returns>
+        new IMap<TDestination> IgnoreDestination(string destination);
+
+        /// <summary>
         /// Compiles the map
         /// </summary>
         /// <returns></returns>
@@ -158,43 +143,7 @@ namespace AOMapper.Interfaces
         /// <param name="source"></param>
         /// <param name="destination"></param>
         /// <returns></returns>
-        new IMap<TDestination> Remap<TR>(string source, string destination, Resolver resolver = null);
-
-        /// <summary>
-        /// Registers a new method for the destination type
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="name"></param>
-        /// <param name="method"></param>
-        /// <returns></returns>
-        new IMap<TDestination> RegisterDestinationMethod<T>(string name, T method);
-
-        /// <summary>
-        /// Registers a new global method
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="name"></param>
-        /// <param name="method"></param>
-        /// <returns></returns>
-        new IMap<TDestination> RegisterGlobalMethod<T>(string name, T method);
-
-        /// <summary>
-        /// Registers a new method for the source type
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="name"></param>
-        /// <param name="method"></param>
-        /// <returns></returns>
-        new IMap<TDestination> RegisterSourceMethod<T>(string name, T method);
-
-        /// <summary>
-        /// Registers a new method for all available targets
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="name"></param>
-        /// <param name="method"></param>
-        /// <returns></returns>
-        new IMap<TDestination> RegisterMethod<T>(string name, T method);
+        new IMap<TDestination> Remap<TR>(string source, string destination, Resolver resolver = null);        
 
         /// <summary>
         /// Executes mapping from target to destination object        
@@ -233,6 +182,20 @@ namespace AOMapper.Interfaces
         new IMap<TSource, TDestination> Auto();
 
         /// <summary>
+        /// Ignores the specified source path during auto mapping.
+        /// </summary>
+        /// <param name="source"></param>
+        /// <returns></returns>
+        new IMap<TSource, TDestination> IgnoreSource(string source);
+
+        /// <summary>
+        /// Ignores the destination path during auto mapping.
+        /// </summary>
+        /// <param name="destination"></param>
+        /// <returns></returns>
+        new IMap<TSource, TDestination> IgnoreDestination(string destination);
+
+        /// <summary>
         /// Compiles the map
         /// </summary>
         /// <returns></returns>
@@ -245,12 +208,19 @@ namespace AOMapper.Interfaces
         /// <param name="destination"></param>
         /// <param name="resolver"></param>
         /// <returns></returns>
-        new IMap<TSource, TDestination> Remap(string source, string destination, Resolver resolver = null);
+        new IMap<TSource, TDestination> Remap(string source, string destination, Resolver resolver = null);        
 
         /// <summary>
         /// Remaps the specified property according to specified path
         /// </summary>        
-        IMap Remap<TS, TR>(Expression<Func<TSource, TS>> source, Expression<Func<TDestination, TR>> destination);
+        IMap<TSource, TDestination> Remap<TS>(Expression<Func<TSource, TS>> source, Expression<Func<TDestination, TS>> destination);
+
+        IMap<TSource, TDestination> Remap(Expression<Func<TSource, object>> source, Expression<Func<TDestination, object>> destination);
+
+        IMap<TSource, TDestination> Remap<TS, TR>(Expression<Func<TSource, TS>> source, Expression<Func<TDestination, TR>> destination, Resolver<TS, TR> resolver);
+
+        new IMap<TSource, TDestination> RemapFrom<TR>(Expression<Func<TDestination, TR>> destination,
+            Func<TSource, TR> selector);
 
         /// <summary>
         /// Remaps the specified property according to specified path
@@ -259,43 +229,7 @@ namespace AOMapper.Interfaces
         /// <param name="source"></param>
         /// <param name="destination"></param>
         /// <returns></returns>
-        new IMap<TSource, TDestination> Remap<TR>(string source, string destination);
-
-        /// <summary>
-        /// Registers a new method for the destination type
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="name"></param>
-        /// <param name="method"></param>
-        /// <returns></returns>
-        new IMap<TSource, TDestination> RegisterDestinationMethod<T>(string name, T method);
-
-        /// <summary>
-        /// Registers a new global method
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="name"></param>
-        /// <param name="method"></param>
-        /// <returns></returns>
-        new IMap<TSource, TDestination> RegisterGlobalMethod<T>(string name, T method);
-
-        /// <summary>
-        /// Registers a new method for the source type
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="name"></param>
-        /// <param name="method"></param>
-        /// <returns></returns>
-        new IMap<TSource, TDestination> RegisterSourceMethod<T>(string name, T method);
-
-        /// <summary>
-        /// Registers a new method for all available targets
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="name"></param>
-        /// <param name="method"></param>
-        /// <returns></returns>
-        new IMap<TSource, TDestination> RegisterMethod<T>(string name, T method);
+        new IMap<TSource, TDestination> Remap<TR>(string source, string destination);        
 
         /// <summary>
         /// Executes mapping from target to destination object        
@@ -317,13 +251,6 @@ namespace AOMapper.Interfaces
         /// </summary>
         /// <param name="config"></param>
         /// <returns></returns>
-        new IMap<TSource, TDestination> ConfigMap(Action<Mapper.Config> config);        
-
-        /// <summary>        
-        /// Generates mapping proxy object, that allows to perform real-time mapping using parent gettes and setters.
-        /// </summary>
-        /// <param name="obj"></param>
-        /// <returns></returns>
-        MappingObject<TSource, TDestination> GenerateProxy(TSource obj);        
+        new IMap<TSource, TDestination> ConfigMap(Action<Mapper.Config> config);                    
     }    
 }

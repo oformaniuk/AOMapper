@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq.Expressions;
+using AOMapper.Data;
 
 namespace AOMapper.Interfaces
 {
@@ -10,5 +11,5 @@ namespace AOMapper.Interfaces
 
         string GetSourcePath<T, R>(Expression<Func<T, R>> destination);
         string GetDestinationPath<T, R>(Expression<Func<T, R>> source);
-    }
+    }    
 }

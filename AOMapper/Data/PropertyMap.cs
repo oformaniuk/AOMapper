@@ -1,9 +1,14 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using AOMapper.Extensions;
+using AOMapper.Helpers;
+using AOMapper.Interfaces;
+using AOMapper.Resolvers;
 
 namespace AOMapper.Data
-{
+{    
     internal class PropertyMap<TSource, TDestination>
     {
         public DataProxy<TSource> Source { get; set; }
@@ -18,24 +23,64 @@ namespace AOMapper.Data
         public string[] SourceNonReMapedProperties { get; private set; }
         public string[] SourceReMapedProperties { get; private set; }
         public string[] SourceLoopProperties { get; private set; }
+        public string[] NonResolvedProperties { get; set; }
 
-        public void Calculate()
+        public void Calculate(IMap map)
         {
-            DestinationNonReMapedProperties = Destination.Where(o => !AdditionalMaps.Any(k => k.Value.Path.Contains(o)) && !Destination.IsEnumerable(o))
+            NonResolvedProperties = Destination
+                .Where(o => !AdditionalMaps.Any(k => k.Value.Path.Contains(o)) && !Destination.IsEnumerable(o))
+                .Where(o => Source.ContainsProperty(o))
+                .Where(o => Destination.GetPropertyInfo(o).PropertyType != Source.GetPropertyInfo(o).PropertyType)
+                .Select(o =>
+                {
+                    Resolver.Create(Source.GetPropertyInfo(o).PropertyType, 
+                        Destination.GetPropertyInfo(o).PropertyType,
+                        map);
+
+                    return o;
+                })
+                .ToArray();
+
+            DestinationNonReMapedProperties = Destination
+                .Except(NonResolvedProperties)
+                .Where(o => !AdditionalMaps.Any(k => k.Value.Path.Contains(o)) && !Destination.IsEnumerable(o))
                 .Where(o => Source.ContainsProperty(o))
                 .ToArray();
 
-            DestinationReMapedProperties = Destination.Where(o => AdditionalMaps.Any(k => k.Value.Path.Contains(o)) && Destination.IsEnumerable(o)).ToArray();
-
-            DestinationLoopProperties = Destination.Where(o => !AdditionalMaps.Any(k => k.Value.Path.Contains(o)) && Destination.IsEnumerable(o))
-                .Where(o => Source.ContainsProperty(o))
+            DestinationReMapedProperties =
+                Destination.Where(o => AdditionalMaps.Any(k => k.Value.Path.Contains(o)))                
                 .ToArray();
 
-            SourceNonReMapedProperties = Source.Where(o => !AdditionalMaps.Any(k => k.Key.Path.Contains(o)) && !Source.IsEnumerable(o)).ToArray();
-            SourceReMapedProperties = Source.Where(o => AdditionalMaps.Any(k => k.Key.Path.Contains(o)) && !Source.IsEnumerable(o)).ToArray();
+            DestinationLoopProperties =
+                Destination.Where(o => !AdditionalMaps.Any(k => k.Value.Path.Contains(o)) && Destination.IsEnumerable(o))
+                    .Where(o => Source.ContainsProperty(o))
+                    .ToArray();
 
-            SourceLoopProperties = Source.Where(o => !AdditionalMaps.Any(k => k.Key.Path.Contains(o)) && Source.IsEnumerable(o)).ToArray();
-        }
+            AdditionalMaps.ForEach(o =>
+            {
+                Resolver.Create(o.Key.Type, o.Value.Type, map);
+            });
+
+            SourceNonReMapedProperties = Source
+                .Except(NonResolvedProperties)
+                .Where(
+                    o =>
+                        !AdditionalMaps.Where(k => k.Key.Path != null).Any(k => k.Key.Path.Contains(o)) &&
+                        !Source.IsEnumerable(o))                
+                .ToArray();
+
+            SourceReMapedProperties =
+                Source.Where(
+                    o =>
+                        AdditionalMaps.Where(k => k.Key.Path != null).Any(k => k.Key.Path.Contains(o)) &&
+                        !Source.IsEnumerable(o)).ToArray();
+
+            SourceLoopProperties =
+                Source.Where(
+                    o =>
+                        !AdditionalMaps.Where(k => k.Key.Path != null).Any(k => k.Key.Path.Contains(o)) &&
+                        Source.IsEnumerable(o)).ToArray();
+        }        
 
         protected bool Equals(PropertyMap<TSource, TDestination> other)
         {

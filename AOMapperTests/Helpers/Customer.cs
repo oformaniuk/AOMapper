@@ -12,6 +12,8 @@ namespace AOMapperTests.Helpers
     public class Customer5 : Customer
     {
         public List<DateTime> DateTimes { get; set; }
+
+        public CustomerSubClass2 SubClass2 { get; set; }
     }
 
     public class Customer
@@ -19,7 +21,7 @@ namespace AOMapperTests.Helpers
         public string FirstName { get; set; }
         public string LastName { get; set; }
         public DateTime DateOfBirth { get; set; }
-        public int NumberOfOrders { get; set; }
+        public int NumberOfOrders { get; set; }        
 
         public CustomerSubClass Sub { get; set; }   
 
@@ -48,6 +50,12 @@ namespace AOMapperTests.Helpers
                 return hashCode;
             }
         }
+    }
+
+    public class Customer6 : Customer
+    {
+        public ConsoleColor Color { get; set; }
+        public int Cast { get; set; }
     }
 
     public class Customer2 : Customer

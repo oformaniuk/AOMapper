@@ -10,32 +10,34 @@ namespace AOMapper.Data
 {
     public class MappingObject<TSource, TDestination> : MappingObject
     {
-        internal MappingObject(IEnumerable<FieldMetadata> metadatas) : base(metadatas) { }        
+        internal MappingObject(IEnumerable<FieldMetadata> metadatas) : base(metadatas)
+        {
+        }
 
         /// <summary>
-        /// Gets the underlying parent object.
+        ///     Gets the underlying parent object.
         /// </summary>
         /// <value>
-        /// The underlying object.
+        ///     The underlying object.
         /// </value>
         public new TSource UnderlyingObject { get; internal set; }
 
         /// <summary>
-        /// Gets the value of the mapped parent object's property.
-        /// </summary>       
+        ///     Gets the value of the mapped parent object's property.
+        /// </summary>
         /// <returns></returns>
-        /// <exception cref="MissingMemberException"/>
+        /// <exception cref="MissingMemberException" />
         public TResult GetValue<TResult>(Expression<Func<TDestination, TResult>> expression) where TResult : class
         {
             var memberExpression = expression.Body as MemberExpression;
             if (memberExpression == null) throw new MissingMemberException();
 
             var pair = FieldMetadatas[memberExpression.Member.Name];
-            return pair.Value.GetGeneric<TSource, TResult>((TSource)pair.Key);
+            return pair.Value.GetGeneric<TSource, TResult>((TSource) pair.Key);
         }
 
         /// <summary>
-        /// Sets the value to the mapped parent object's property.
+        ///     Sets the value to the mapped parent object's property.
         /// </summary>
         /// <param name="expression"></param>
         /// <param name="value"></param>
@@ -58,23 +60,28 @@ namespace AOMapper.Data
             foreach (var fieldMetadata in metadatas)
             {
                 _accessorBuilderMethod.MakeGeneric(fieldMetadata.DeclareType, fieldMetadata.FieldType)
-                    .Invoke(null, new object[] { FieldMetadatas, fieldMetadata.FieldName, fieldMetadata.Object, fieldMetadata.MappedPropertyGetter, fieldMetadata.MappedPropertySetter });
+                    .Invoke(null,
+                        new[]
+                        {
+                            FieldMetadatas, fieldMetadata.FieldName, fieldMetadata.Object,
+                            fieldMetadata.MappedPropertyGetter, fieldMetadata.MappedPropertySetter
+                        });
             }
-        }        
+        }
 
         /// <summary>
-        /// Gets the underlying parent object.
+        ///     Gets the underlying parent object.
         /// </summary>
         /// <value>
-        /// The underlying object.
+        ///     The underlying object.
         /// </value>
         public object UnderlyingObject { get; internal set; }
 
         /// <summary>
-        /// Gets or sets the target property of the parent object
+        ///     Gets or sets the target property of the parent object
         /// </summary>
         /// <value>
-        /// The <see cref="System.Object"/>.
+        ///     The <see cref="System.Object" />.
         /// </value>
         /// <param name="name"></param>
         /// <returns></returns>
@@ -86,7 +93,7 @@ namespace AOMapper.Data
 
 
         /// <summary>
-        /// Gets the value of the mapped parent object's property.
+        ///     Gets the value of the mapped parent object's property.
         /// </summary>
         /// <param name="name">Target property name</param>
         /// <returns></returns>
@@ -97,7 +104,7 @@ namespace AOMapper.Data
         }
 
         /// <summary>
-        /// Sets the value to the mapped parent object's property.
+        ///     Sets the value to the mapped parent object's property.
         /// </summary>
         /// <param name="name">Target property name</param>
         /// <param name="value"></param>
@@ -108,8 +115,8 @@ namespace AOMapper.Data
         }
 
         /// <summary>
-        /// Gets the value of the mapped parent object's property.
-        /// </summary>        
+        ///     Gets the value of the mapped parent object's property.
+        /// </summary>
         /// <param name="expression"></param>
         /// <returns></returns>
         /// <exception cref="MissingMemberException"></exception>
@@ -119,11 +126,11 @@ namespace AOMapper.Data
             if (memberExpression == null) throw new MissingMemberException();
 
             var pair = FieldMetadatas[memberExpression.Member.Name];
-            return pair.Value.GetGeneric<TSource, TResult>((TSource)pair.Key);
+            return pair.Value.GetGeneric<TSource, TResult>((TSource) pair.Key);
         }
 
         /// <summary>
-        /// Sets the value to the mapped parent object's property.
+        ///     Sets the value to the mapped parent object's property.
         /// </summary>
         /// <param name="expression"></param>
         /// <param name="value"></param>
@@ -140,9 +147,10 @@ namespace AOMapper.Data
         #region Fields
 
         private readonly MethodInfo _accessorBuilderMethod =
-            typeof(MappingObject).GetMethod("BuildAccessors", BindingFlags.NonPublic | BindingFlags.Static);
+            typeof (MappingObject).GetMethod("BuildAccessors", BindingFlags.NonPublic | BindingFlags.Static);
 
         internal readonly Dictionary<StringKey, Map<object, IAccessObject>> FieldMetadatas;
+
         #endregion
 
         #region Helpers
@@ -156,6 +164,7 @@ namespace AOMapper.Data
         {
             return arg => (f as Func<T, TR>)(arg);
         }
+
         private static void BuildAccessors<T, TRet>(
             Dictionary<StringKey, Map<object, IAccessObject>> dictionary, string name, object o,
             Delegate getter, Delegate setter)
@@ -163,13 +172,12 @@ namespace AOMapper.Data
             var obj = new AccessObject<T, TRet>
             {
                 Getter = _convertDelegateToFunc<T, TRet>(getter),
-                Setter = _convertDelegateToAction<T, TRet>(setter),
+                Setter = _convertDelegateToAction<T, TRet>(setter)
             };
 
             dictionary[name] = new Map<object, IAccessObject>(o, obj);
         }
 
         #endregion
-     
     }
 }

@@ -8,6 +8,12 @@ namespace AOMapperTests.Helpers
         public string NumberOfOrders { get; set; }
     }
 
+    public class CustomerSimpleViewItem6 : CustomerSimpleViewItem3
+    {
+        public int Color { get; set; }
+        public double Cast { get; set; }
+    }
+
     public class CustomerSimpleViewItem4 : CustomerSimpleViewItem
     {
         public Dictionary<string, string> DateTimes { get; set; } 
@@ -16,6 +22,8 @@ namespace AOMapperTests.Helpers
     public class CustomerSimpleViewItem5 : CustomerSimpleViewItem
     {
         public DateTime[] DateTimes { get; set; }
+
+        public virtual CustomerSubViewItem2 SubViewItem2 { get; set; }
     }
 
     public class CustomerSimpleViewItem
@@ -25,9 +33,10 @@ namespace AOMapperTests.Helpers
         public DateTime DateOfBirth { get; set; }
         //}
 
-        //public virtual string SubName { get; set; }
+        public virtual string SubName { get; set; }
+        public virtual string SubDescription { get; set; }
 
-        //public virtual CustomerSubViewItem SubSubItem { get; set; }
+        public virtual CustomerSubViewItem SubSubItem { get; set; }
 
         //public int NumberOfOrders { get; set; }
 

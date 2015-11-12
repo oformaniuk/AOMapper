@@ -32,7 +32,7 @@ namespace AOMapper.Resolvers
     }
 
     public abstract class Resolver
-    {
+    {              
         protected static Dictionary<IMap, Dictionary<KeyValuePair<TypeKey, TypeKey>, Resolver>> ResolverMapping
             = new Dictionary<IMap, Dictionary<KeyValuePair<TypeKey, TypeKey>, Resolver>>();
 
@@ -66,9 +66,14 @@ namespace AOMapper.Resolvers
         }
 
         protected readonly IMap _map;
-        public readonly Type SouceType;
-        public readonly Type DestinationType;
-        private static readonly TypeKey TypeOfIList = typeof (IList);
+        public Type SouceType { get; protected set; }
+        public Type DestinationType { get; protected set; }
+        internal static readonly TypeKey TypeOfIList = typeof (IList);
+
+        public virtual Resolver Create(Type resolver, Type source, Type destination, IMap map)
+        {
+            return this;
+        }
 
         public static Resolver Create(Type source, Type destination, IMap map, Type resolver = null)
         {          
@@ -80,21 +85,12 @@ namespace AOMapper.Resolvers
             {
                 return ResolverMapping[map][valuePair];
             }
-            
-            Resolver res;
-            if (TypeOfIList.Value.IsAssignableFrom(source) && TypeOfIList.Value.IsAssignableFrom(destination))
-            {                
-                res = IEnumerableResolver.CreateIEnumerable(resolver, source, destination, map);
-            }            
-            else if(resolver != null)
-            {
-                res = (Resolver)resolver.MakeGenericType(source, destination)
-                    .Create(map);
-            }
-            else
-            {
-                return null;
-            }
+
+            var type = ResolverFactory.Get(source, destination, resolver);
+            if (type.IsGenericType) type = type.MakeGenericType(source, destination);
+
+            var res = ((Resolver) type.Create(map, source, destination))
+                .Create(resolver, source, destination, map);
 
             ResolverMapping[map].Add(valuePair, res);
             return res;
@@ -102,15 +98,21 @@ namespace AOMapper.Resolvers
 
         public abstract void Resolve(object source, ref object destination);
 
-        protected Resolver(IMap map = null)
-        {
-            _map = map;
+        protected Resolver(IMap map)
+            :this(map, null, null)
+        {            
         }
 
         protected Resolver(Type source, Type destination)
+            :this(null, source, destination)
+        {            
+        }
+
+        protected Resolver(IMap map, Type source, Type destination)
         {
+            _map = map;
             SouceType = source;
-            DestinationType = destination;
+            DestinationType = destination;            
         }
     }
 }

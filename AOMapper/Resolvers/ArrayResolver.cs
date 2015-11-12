@@ -1,61 +1,49 @@
 ﻿using System;
 using System.Collections;
-using System.Linq;
-using AOMapper.Extensions;
 using AOMapper.Interfaces;
 
 namespace AOMapper.Resolvers
 {
-    internal abstract class IEnumerableResolver : Resolver
-    {
-        public IEnumerableResolver(IMap map) : base(map)
-        {
-        }
-
-        public static Resolver CreateIEnumerable(Type resolver, Type source, Type destination, IMap map)
-        {
-            var destArg = destination.IsArray ? destination.GetElementType() : destination.GetGenericArguments().Single();
-            var sPropArg = source.IsArray ? source.GetElementType() : source.GetGenericArguments().Single();
-
-            return (Resolver)resolver.MakeGenericType(sPropArg, destArg)
-                .Create(map);
-        }
-    }
-
-    public class ArrayResolver<TS, TD> : Resolver
+    public class ArrayResolver<TS, TD> : Resolver where TD : new()
     {
         protected bool SameTypes { get; set; }        
+        protected delegate void MapMathod(IList _destination, IList list);
 
-        public ArrayResolver(IMap map) : base(map)
+        protected MapMathod _method;       
+
+        public ArrayResolver(IMap map, Type source, Type destination) 
+            : base(map, source, destination)
         {
-            SameTypes = typeof (TS) == typeof (TD);            
+            SameTypes = typeof (TS) == typeof (TD);
+            if (SameTypes) _method = MapSameType;
+            else _method = MapNotSameType;
         }
 
-        private void ResolveDifferent(object source, ref object destination)
+        private void MapNotSameType(IList _destination, IList list)
         {
-            var _destination = (IList)destination;
-            IList list = source as IList;
+            bool compileInners = false;
+            _map.ConfigMap(config => compileInners = config.CompileInnerMaps);
+            var map = Mapper.Create<TS, TD>();
+            if (compileInners) map.Compile();
+
             if (_destination.IsFixedSize)
             {
                 for (int i = 0; i < list.Count; i++)
                 {
-                    _destination[i] = _map.Do<TS, TD>((TS)list[i]);
+                    _destination[i] = map.Do<TS, TD>((TS) list[i]);
                 }
             }
             else
             {
                 for (int i = 0; i < list.Count; i++)
                 {
-                    _destination.Add(_map.Do<TS, TD>((TS)list[i]));
+                    _destination.Add(map.Do<TS, TD>((TS) list[i]));
                 }
             }
-            destination = _destination;  
-        }
+        }        
 
-        private void ResolveSame(object source, ref object destination)
+        private void MapSameType(IList _destination, IList list)
         {
-            var _destination = (IList)destination;
-            IList list = source as IList;
             if (_destination.IsFixedSize)
             {
                 for (int i = 0; i < list.Count; i++)
@@ -70,13 +58,23 @@ namespace AOMapper.Resolvers
                     _destination.Add(list[i]);
                 }
             }
-            destination = _destination;  
         }
 
         public override void Resolve(object source, ref object destination)
-        {
-            if(SameTypes) ResolveSame(source, ref destination);
-            else ResolveDifferent(source, ref destination);
+        {            
+            IList list = source as IList;
+            if (destination == null)
+            {
+                destination = DestinationType.IsArray ? 
+                    Activator.CreateInstance(DestinationType, list.Count) :
+                    Activator.CreateInstance(DestinationType, list.Count * 2);
+            }
+
+            var _destination = destination as IList;
+
+            _method(_destination, list);             
+
+            destination = _destination;  
         }
     }    
 }

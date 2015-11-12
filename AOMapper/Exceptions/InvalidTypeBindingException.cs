@@ -13,16 +13,26 @@ namespace AOMapper.Exceptions
         public Type TargetType { get; private set; }
 
         public InvalidTypeBindingException(string path, Type sourceType, Type targetType)
+            : base(Format(path, sourceType, targetType))
         {
             BuildException(path, sourceType, targetType);
         }
 
-        public InvalidTypeBindingException(string message, string path, Type sourceType, Type targetType) : base(message)
+        private static string Format(string path, Type sourceType, Type targetType)
+        {
+            return string.Format("Cannot bind path '{0}'. Types '{1}' and '{2}' are incompatible. " +
+                                 "To fix this you can register global Resolver if you are generating map automatically " +
+                                 "or use .Remap() overload with resolver registration for manual remapping", path, sourceType, targetType);
+        }
+
+        public InvalidTypeBindingException(string message, string path, Type sourceType, Type targetType) 
+            : base(string.IsNullOrEmpty(message) ? Format(path, sourceType, targetType) : message)
         {
             BuildException(path, sourceType, targetType);
         }        
 
-        public InvalidTypeBindingException(string message, Exception inner, string path, Type sourceType, Type targetType) : base(message, inner)
+        public InvalidTypeBindingException(string message, Exception inner, string path, Type sourceType, Type targetType)
+            : base(string.IsNullOrEmpty(message) ? Format(path, sourceType, targetType) : message, inner)
         {
             BuildException(path, sourceType, targetType);
         }

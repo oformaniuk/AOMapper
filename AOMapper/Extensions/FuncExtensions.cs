@@ -28,8 +28,8 @@ namespace AOMapper.Extensions
             return @new => f(@new);
         }        
 
-        public  static Func<TX, TZ> Compose<TX, TY, TZ>(this Func<TX, TY> f, Func<TY, TZ> g)
-        {
+        public static Func<TX, TZ> Compose<TX, TY, TZ>(this Func<TX, TY> f, Func<TY, TZ> g)
+        {            
             return x => g(f(x));
         }        
 

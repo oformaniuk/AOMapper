@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using AOMapper;
 using AOMapper.Extensions;
 using AOMapper.Interfaces;
@@ -16,10 +17,13 @@ namespace ProfilerTarget
         static void Main(string[] args)
         {
             new Program().Run();
+
+            Console.WriteLine("Finished");
+            Console.ReadKey();
         }
 
         public void Run()
-        {            
+        {
             var map = RunTimedFunction((s) =>
             {
                 s.Start();
@@ -34,7 +38,11 @@ namespace ProfilerTarget
             {
                 Mapper.Clear();
                 s.Start();
-                var o = (IMap<Customer2, CustomerViewItem2>)Mapper.Create<Customer2, CustomerViewItem2>().ConfigMap(x => x.CompileInnerMaps = true).Auto().Compile();
+                var o = (IMap<Customer2, CustomerViewItem2>)Mapper.Create<Customer2, CustomerViewItem2>()
+                    .ConfigMap(x => x.CompileInnerMaps = true)
+                    .Auto()
+                    .Compile();
+
                 s.Stop();
                 return o;
             }, "Mapper compile: ");
@@ -60,9 +68,12 @@ namespace ProfilerTarget
                 PopulateCustomers(x);
 
                 var mapperResult = RunTimedFunction((s) => RunMapper(map, s), string.Format("Mapper with {0} elements: ", x));
-                var mapperCompiledResult = RunTimedFunction((s) => RunMapper(mapCompiled, s), string.Format("Mapper (Compiled) with {0} elements: ", x));
+                //var mapperCompiledResult = RunTimedFunction((s) => RunMapper(mapCompiled, s), string.Format("Mapper (Compiled) with {0} elements: ", x));
                 var autoMapperResult = RunTimedFunction(RunAutoMapper<Customer2, CustomerViewItem2>, string.Format("AutoMapper with {0} elements: ", x));                
                 var manualResult = RunTimedFunction(RunManual2, string.Format("Manual with {0} elements: ", x));
+
+                GC.Collect(2);
+                Thread.Sleep(20);
 
                 Console.WriteLine();
                 Console.WriteLine();

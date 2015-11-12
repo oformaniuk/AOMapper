@@ -30,6 +30,20 @@ namespace AOMapper.Extensions
         }
 
         /// <summary>
+        /// Allows to manipulate the object in the chain manner.
+        /// </summary>
+        /// <returns></returns>
+        [DebuggerStepThrough]
+        public static IEnumerable<T> Apply<T>(this IEnumerable<T> source, Action<T> action) where T : class
+        {
+            foreach (var s in source)
+            {
+                action(s);
+                yield return s;
+            }            
+        }
+
+        /// <summary>
         /// Determines whether the specified collection has more them one element.
         /// </summary>
         /// <typeparam name="T"></typeparam>

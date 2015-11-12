@@ -31,7 +31,18 @@ namespace AOMapper.Data.Keys
         /// </returns>
         public static implicit operator string(StringKey value)
         {
-            return value.Value;
-        }        
+            return value == null ? null : value.Value;
+        }
+
+        public override string ToString()
+        {
+            return Value;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj)) return false;
+            return HashCode == obj.GetHashCode();
+        }
     }
 }

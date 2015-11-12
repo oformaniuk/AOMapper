@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.Contracts;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 using AOMapper.Data;
 using AOMapper.Data.Keys;
@@ -76,7 +78,7 @@ namespace AOMapper
 
         private readonly Dictionary<StringKey, IAccessObject> _accessObjects;
         private readonly TypeKey _type;
-        private Dictionary<StringKey, MethodProperty> _methods;
+        private Dictionary<StringKey, MethodProperty> _methods;        
         private static readonly MethodInfo BuildAccessorsMethod = typeof(DataProxy<TEntity>).GetMethod("BuildAccessors", BindingFlags.Static | BindingFlags.NonPublic);
         private readonly Dictionary<StringKey, object> _virtualProperties = new Dictionary<StringKey, object>();
         private readonly int _hashCode;
@@ -184,6 +186,11 @@ namespace AOMapper
         {
             get;
             private set;
+        }
+
+        public Type Type
+        {
+            get { return _type; }
         }
 
         #endregion                
@@ -361,6 +368,26 @@ namespace AOMapper
         }
 
         /// <summary>
+        /// Gets the property information.
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        public MemberInfo GetMemberInfo(string name)
+        {
+            return (_accessObjects[name]).MemberInfo;
+        }
+
+        /// <summary>
+        /// Gets the property information.
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        public Type GetMemberType(string name)
+        {
+            return (_accessObjects[name]).MemberType;
+        }
+
+        /// <summary>
         /// Gets the setter delegate.
         /// </summary>
         /// <param name="name"></param>
@@ -421,16 +448,25 @@ namespace AOMapper
             if (AccessObjects.Value.ContainsKey(type)) return;
 
             AccessObjects.Value.Add(type, new Dictionary<StringKey, IAccessObject>());
-            var buildAccessor = typeof(DataProxy<TEntity>).GetMethod("BuildAccessor", BindingFlags.NonPublic | BindingFlags.Static);
+            var buildAccessor = typeof(DataProxy<TEntity>).GetMethod("BuildPropertyAccessor", BindingFlags.NonPublic | BindingFlags.Static);
 
             foreach (var o in type.Value.GetProperties().Where(o => o.CanRead && o.CanWrite))
             {                
                 buildAccessor.MakeGeneric(type, o.PropertyType)
                     .Invoke(null, new object[]{type, o});
             }
+
+
+            // TODO: Implement fields support
+            //buildAccessor = typeof(DataProxy<TEntity>).GetMethod("BuildFieldAccessor", BindingFlags.NonPublic | BindingFlags.Static);
+            //foreach (var o in type.Value.GetFields().Where(o => !o.IsSpecialName && !o.IsInitOnly && !o.IsStatic))
+            //{                               
+            //    buildAccessor.MakeGeneric(type, o.FieldType)
+            //        .Invoke(null, new object[] { type, o });
+            //}
         }
 
-        private static void BuildAccessor<T, TR>(TypeKey type, PropertyInfo o)
+        private static void BuildPropertyAccessor<T, TR>(TypeKey type, PropertyInfo o)
         {
             if (o.GetIndexParameters().Any()) return; // indexers are not supported
 
@@ -441,7 +477,8 @@ namespace AOMapper
                     PropertyInfo = o,
                     Getter = o.CanRead ? GetValueGetter<T, TR>(o, type) : null,
                     Setter = o.CanWrite ? GetValueSetter<T, TR>(o, type) : null,
-                    CanCreate = o.PropertyType.GetConstructor(new Type[0]) != null
+                    CanCreate = o.PropertyType.GetConstructor(new Type[0]) != null,
+                    FieldInfo = null
                 };
             }
             else if (!AccessObjects.Value[type].ContainsKey(o.Name))
@@ -451,29 +488,79 @@ namespace AOMapper
                     PropertyInfo = o,
                     Getter = o.CanRead && o.GetGetMethod() != null ? GetValueGetter<T, TR>(o, type) : null,
                     Setter = o.CanWrite && o.GetSetMethod() != null ? GetValueSetter<T, TR>(o, type) : null,
-                    CanCreate = o.PropertyType.GetConstructor(new Type[0]) != null
+                    CanCreate = o.PropertyType.GetConstructor(new Type[0]) != null,
+                    FieldInfo = null
                 });
             }
         }
 
-        private static Func<T, TR> GetValueGetter<T, TR>(PropertyInfo propertyInfo, Type type)
-        {            
-            if (!(type == propertyInfo.DeclaringType || type == propertyInfo.ReflectedType))
-            {
-                throw new Exception();                
-            }
+        private static void BuildFieldAccessor<T, TR>(TypeKey type, FieldInfo o)
+        {
+            //if (o.GetIndexParameters().Any()) return; // indexers are not supported
 
-            return Delegate.CreateDelegate(typeof(Func<T, TR>), propertyInfo.GetGetMethod()) as Func<T, TR>;
+            if (AccessObjects.Value[type].ContainsKey(o.Name) && o.DeclaringType == type)
+            {
+                AccessObjects.Value[type][o.Name] = new AccessObject<T, TR>
+                {
+                    PropertyInfo = null,
+                    Getter = arg => (TR)o.GetValue(arg), //o.CanRead ? GetValueGetter<T, TR>(o, type) : null,
+                    Setter = (arg1, r) => o.SetValue(arg1, r),
+                    CanCreate = o.FieldType.GetConstructor(new Type[0]) != null,
+                    FieldInfo = o
+                };
+            }
+            else if (!AccessObjects.Value[type].ContainsKey(o.Name))
+            {
+                AccessObjects.Value[type].Add(o.Name, new AccessObject<T, TR>
+                {
+                    PropertyInfo = null,
+                    Getter = arg => (TR)o.GetValue(arg),
+                    Setter = (arg1, r) => o.SetValue(arg1, r),
+                    CanCreate = o.FieldType.GetConstructor(new Type[0]) != null,
+                    FieldInfo = o
+                });
+            }
         }
 
-        private static Action<T, TR> GetValueSetter<T, TR>(PropertyInfo propertyInfo, Type type)
+        internal static Func<T, TR> GetValueGetter<T, TR>(PropertyInfo propertyInfo, Type type)
         {            
+            if (!(type == propertyInfo.DeclaringType || type == propertyInfo.ReflectedType))
+            {
+                //throw new InvalidOperationException("Property does not belong to the type");     
+                return null;
+            }
+
+            if(type.IsClass)
+                return Delegate.CreateDelegate(typeof(Func<T, TR>), propertyInfo.GetGetMethod()) as Func<T, TR>;
+
+            ParameterExpression paramExpression = Expression.Parameter(type, "value");
+
+            Expression propertyGetterExpression = Expression.Property(paramExpression, propertyInfo.Name);
+            
+            return Expression.Lambda<Func<T, TR>>(propertyGetterExpression, paramExpression).Compile();            
+        }
+
+        internal static Action<T, TR> GetValueSetter<T, TR>(PropertyInfo propertyInfo, Type type)
+        {
+            Contract.Requires(type != null);
             if (!(type == propertyInfo.DeclaringType || type == propertyInfo.ReflectedType))
             {
                 throw new Exception();                
             }
 
-            return (Action<T, TR>)Delegate.CreateDelegate(typeof(Action<T, TR>), propertyInfo.GetSetMethod());
+            if (type.IsClass)
+                return (Action<T, TR>)Delegate.CreateDelegate(typeof(Action<T, TR>), propertyInfo.GetSetMethod());
+
+            ParameterExpression paramExpression = Expression.Parameter(type);
+
+            ParameterExpression paramExpression2 = Expression.Parameter(propertyInfo.PropertyType, propertyInfo.Name);
+
+            MemberExpression propertyGetterExpression = Expression.Property(paramExpression, propertyInfo.Name);
+
+            return Expression.Lambda<Action<T, TR>>
+            (
+                Expression.Assign(propertyGetterExpression, paramExpression2), paramExpression, paramExpression2
+            ).Compile();
         }        
 
         private static void InitObjects<T>(ref Dictionary<StringKey, AccessObject<T, object>> dictionary)

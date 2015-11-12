@@ -1,5 +1,4 @@
-﻿
-#if !DEPLOY && !FIX && !DEV
+﻿#if !DEPLOY && !FIX && !DEV
 using System.Reflection;
 
 [assembly: AssemblyInformationalVersion("1.0.5.2")]

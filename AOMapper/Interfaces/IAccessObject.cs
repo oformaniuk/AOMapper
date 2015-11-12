@@ -20,5 +20,9 @@ namespace AOMapper.Interfaces
         bool CanCreate { get; }
 
         PropertyInfo PropertyInfo { get; }
+
+        FieldInfo FieldInfo { get; }
+        MemberInfo MemberInfo { get; }
+        Type MemberType { get; }
     }
 }

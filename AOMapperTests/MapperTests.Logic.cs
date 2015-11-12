@@ -20,7 +20,35 @@ namespace AOMapperTests
                 FirstName = RandomString(7),
                 LastName = RandomString(8),
                 NumberOfOrders = RandomInt(1, 100),
-                Sub = new CustomerSubClass { Name = RandomString(10) },
+                Sub = new CustomerSubClass 
+                { 
+                    Name = RandomString(10),
+                    //SubClass = new CustomerSubClass
+                    //{
+                    //    Name = RandomString(7)
+                    //}
+                },
+            };
+        }
+
+        private Customer6 GetCustomer6FromDB()
+        {
+            return new Customer6()
+            {
+                DateOfBirth = RandomDay(),
+                FirstName = RandomString(7),
+                LastName = RandomString(8),
+                NumberOfOrders = RandomInt(1, 100),
+                Color = ConsoleColor.Blue,
+                Cast = 42,
+                Sub = new CustomerSubClass
+                {
+                    Name = RandomString(10),
+                    //SubClass = new CustomerSubClass
+                    //{
+                    //    Name = RandomString(7)
+                    //}
+                },
             };
         }
 
@@ -74,7 +102,11 @@ namespace AOMapperTests
                 LastName = RandomString(8),
                 NumberOfOrders = RandomInt(1, 100),
                 Sub = new CustomerSubClass { Name = RandomString(10) },
-                DateTimes = new List<DateTime> { RandomDay(), RandomDay(), RandomDay()}
+                DateTimes = new List<DateTime> { RandomDay(), RandomDay(), RandomDay()},
+                SubClass2 = new CustomerSubClass2
+                {
+                    DateTimes2 = new[] { RandomDay(), RandomDay() }
+                }
             };
         }
 
@@ -141,7 +173,15 @@ namespace AOMapperTests
                     LastName = customer.LastName,
                     DateOfBirth = customer.DateOfBirth,
                     NumberOfOrders = customer.NumberOfOrders,
-                    SubName = customer.Sub.Name
+                    SubName = customer.Sub.Name,
+                    SubSubItem = new CustomerSubViewItem
+                    {
+                        Name = customer.Sub.Name,
+                        //Item = new CustomerSubViewItem
+                        //{
+                        //    Name = customer.Sub.SubClass.Name
+                        //}
+                    }
                 };
                 customers.Add(customerViewManual);
             }

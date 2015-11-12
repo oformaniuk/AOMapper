@@ -38,5 +38,11 @@ namespace AOMapper.Data.Keys
         {
             return value.Value;
         }
+
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj)) return false;
+            return HashCode == obj.GetHashCode();
+        }
     }
 }
