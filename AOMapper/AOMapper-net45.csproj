@@ -109,6 +109,7 @@
     <Compile Include="Compiler\Helpers\ExpressionHelpers.cs" />
     <Compile Include="Compiler\Helpers\ExpressionVisitor.cs" />
     <Compile Include="Compiler\Resolvers\ArrayCompileTimeResolver.cs" />
+    <Compile Include="Compiler\Resolvers\ChangeTypeCompileTimeResolver.cs" />
     <Compile Include="Compiler\Resolvers\CompileTimeResolver.cs" />
     <Compile Include="Compiler\Resolvers\EnumCompileTimeResolver.cs" />
     <Compile Include="Compiler\Resolvers\SimpleCompileTimeResolver.cs" />

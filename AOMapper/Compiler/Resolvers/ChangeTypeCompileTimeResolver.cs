@@ -18,8 +18,11 @@ namespace AOMapper.Compiler.Resolvers
             var conversionType = typeof(TD);
             if (typeof (TS) == conversionType)
                 return sourceExpression;
-
+#if !PORTABLE
             Expression<Func<TS, TD>> convert = s => (TD) Convert.ChangeType(s, conversionType);
+#else
+            Expression<Func<TS, TD>> convert = s => (TD)Convert.ChangeType(s, conversionType, null);
+#endif
             var resolveExpression = Expression.Assign(destinationExpression, new ExpressionRewriter().AutoInline(Expression.Invoke(convert, sourceExpression)));
             return resolveExpression;
         }
