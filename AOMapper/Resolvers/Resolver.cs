@@ -1,6 +1,8 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq.Expressions;
+using AOMapper.Compiler.Resolvers;
 #if !NET35
 using System.Diagnostics.Contracts;
 #endif
@@ -10,24 +12,47 @@ using AOMapper.Interfaces;
 
 namespace AOMapper.Resolvers
 {
-    public class Resolver<TS, TD> : Resolver
+    public class SimpleResolver<TS, TD> : Resolver<TS, TD>
     {
-        private Func<TS, TD> _resolver;  
+        private readonly Func<TS, TD> _resolver;
 
-        public Resolver(Func<TS, TD> resolver) 
+        public SimpleResolver(Expression<Func<TS, TD>> resolver) 
             : base(typeof(TS), typeof(TD))
         {
-            _resolver = resolver;            
+            _resolver = resolver.Compile();
+            CompileTimeResolver = new SimpleCompileTimeResolver(_map, this, resolver);
+        }        
+
+        public override TD Resolve(TS source)
+        {
+            return _resolver(source);
+        }        
+
+        public static implicit operator SimpleResolver<TS, TD>(Expression<Func<TS, TD>> resolver)
+        {
+            return new SimpleResolver<TS, TD>(resolver);
+        }        
+    }
+
+    public abstract class Resolver<TS, TD> : Resolver
+    {
+        public abstract TD Resolve(TS source);        
+
+        public override object Resolve(object source)
+        {
+            return Resolve((TS) source);
         }
 
-        public override void Resolve(object source, ref object destination)
+        protected Resolver(IMap map) : base(map)
         {
-            destination = _resolver((TS)source);
         }
 
-        public static implicit operator Resolver<TS, TD>(Func<TS, TD> resolver)
+        protected Resolver(Type source, Type destination) : base(source, destination)
         {
-            return new Resolver<TS, TD>(resolver);
+        }
+
+        protected Resolver(IMap map, Type source, Type destination) : base(map, source, destination)
+        {
         }
     }
 
@@ -70,6 +95,8 @@ namespace AOMapper.Resolvers
         public Type DestinationType { get; protected set; }
         internal static readonly TypeKey TypeOfIList = typeof (IList);
 
+        internal CompileTimeResolver CompileTimeResolver { get; set; }
+
         public virtual Resolver Create(Type resolver, Type source, Type destination, IMap map)
         {
             return this;
@@ -87,16 +114,23 @@ namespace AOMapper.Resolvers
             }
 
             var type = ResolverFactory.Get(source, destination, resolver);
-            if (type.IsGenericType) type = type.MakeGenericType(source, destination);
+            if(type != null)
+            {
+                if (type.IsGenericType) type = type.MakeGenericType(source, destination);
 
-            var res = ((Resolver) type.Create(map, source, destination))
-                .Create(resolver, source, destination, map);
+                var res = ((Resolver) type.Create(map, source, destination))
+                    .Create(resolver, source, destination, map);
 
-            ResolverMapping[map].Add(valuePair, res);
-            return res;
+                ResolverMapping[map].Add(valuePair, res);
+                return res;
+            }
+
+            return null;
         }
 
-        public abstract void Resolve(object source, ref object destination);
+        public virtual bool CanConvert { get { return true; } }
+
+        public abstract object Resolve(object source);
 
         protected Resolver(IMap map)
             :this(map, null, null)

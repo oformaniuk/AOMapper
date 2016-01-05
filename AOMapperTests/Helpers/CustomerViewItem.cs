@@ -44,11 +44,48 @@ namespace AOMapperTests.Helpers
         }
     }
 
-    public class CustomerViewItem2 : CustomerViewItem
+    public struct CustomerViewItem2
     {
+        public string FirstName { get; set; }
+        public string LastName { get; set; }
+        public DateTime DateOfBirth { get; set; }
+        //}
+
+        public string SubName { get; set; }
+
+        public CustomerSubViewItem SubSubItem { get; set; }
+
+        public int NumberOfOrders { get; set; }
+
+        public bool Equals(CustomerViewItem other)
+        {
+            return string.Equals(FirstName, other.FirstName) && string.Equals(LastName, other.LastName) && DateOfBirth.Equals(other.DateOfBirth) && NumberOfOrders == other.NumberOfOrders;
+        }
+
+        //public override bool Equals(object obj)
+        //{
+        //    if (ReferenceEquals(null, obj)) return false;
+        //    if (ReferenceEquals(this, obj)) return true;
+        //    if (obj.GetType() != this.GetType()) return false;
+        //    return Equals((CustomerViewItem)obj);
+        //}
+
+        //public override int GetHashCode()
+        //{
+        //    unchecked
+        //    {
+        //        var hashCode = (FirstName != null ? FirstName.GetHashCode() : 0);
+        //        hashCode = (hashCode * 397) ^ (LastName != null ? LastName.GetHashCode() : 0);
+        //        hashCode = (hashCode * 397) ^ DateOfBirth.GetHashCode();
+        //        hashCode = (hashCode * 397) ^ (SubName != null ? SubName.GetHashCode() : 0);
+        //        hashCode = (hashCode * 397) ^ NumberOfOrders;
+        //        return hashCode;
+        //    }
+        //}
+
         public SimpleObjectViewItem[] ViewItems { get; set; }
 
-        protected bool Equals(CustomerViewItem2 other)
+        public bool Equals(CustomerViewItem2 other)
         {
             return base.Equals(other) && ViewItems.SequenceEqual(other.ViewItems);
         }

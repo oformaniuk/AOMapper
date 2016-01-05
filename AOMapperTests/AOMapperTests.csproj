@@ -113,7 +113,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\AOMapper\AOMapper-net4.csproj">
-      <Project>{0562F06A-36B9-4DBB-9205-EFE368362E55}</Project>
+      <Project>{0562f06a-36b9-4dbb-9205-efe368362e55}</Project>
       <Name>AOMapper-net4</Name>
     </ProjectReference>
   </ItemGroup>

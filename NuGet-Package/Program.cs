@@ -8,14 +8,14 @@ namespace NuGet_Package
 {
     public class Program
     {
-        static void Main(string[] args)
+        private static void Main(string[] args)
         {
             try
             {
                 var tester = new MapperTests();
                 var methods = tester.GetType().GetMethods()
                     .Where(o => o.GetCustomAttribute<TestMethodAttribute>() != null)
-                    .Select(o => new { Action = (Action)Delegate.CreateDelegate(typeof(Action), tester, o), Method = o });                    
+                    .Select(o => new {Action = (Action) Delegate.CreateDelegate(typeof (Action), tester, o), Method = o});
 
                 foreach (var method in methods)
                 {
@@ -26,15 +26,14 @@ namespace NuGet_Package
                     catch (Exception e)
                     {
                         Console.WriteLine("Method: " + method.Method.Name + " Error: " + e.Message);
-                        throw ;
-                    }                    
+                        throw;
+                    }
                 }
             }
-            catch (Exception e)
+            catch
             {
                 Environment.Exit(2);
             }
-
         }
     }
 }

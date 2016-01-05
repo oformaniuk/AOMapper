@@ -10,30 +10,30 @@ namespace AOMapperTests
 {
     public partial class MapperTests
     {
-        private static readonly Random random = new Random((int)DateTime.Now.Ticks);
+        private static readonly Random random = new Random((int) DateTime.Now.Ticks);
 
         private Customer GetCustomerFromDB()
         {
-            return new Customer()
+            return new Customer
             {
                 DateOfBirth = RandomDay(),
                 FirstName = RandomString(7),
                 LastName = RandomString(8),
                 NumberOfOrders = RandomInt(1, 100),
-                Sub = new CustomerSubClass 
-                { 
-                    Name = RandomString(10),
+                Sub = new CustomerSubClass
+                {
+                    Name = RandomString(10)
                     //SubClass = new CustomerSubClass
                     //{
                     //    Name = RandomString(7)
                     //}
-                },
+                }
             };
         }
 
         private Customer6 GetCustomer6FromDB()
         {
-            return new Customer6()
+            return new Customer6
             {
                 DateOfBirth = RandomDay(),
                 FirstName = RandomString(7),
@@ -43,24 +43,24 @@ namespace AOMapperTests
                 Cast = 42,
                 Sub = new CustomerSubClass
                 {
-                    Name = RandomString(10),
+                    Name = RandomString(10)
                     //SubClass = new CustomerSubClass
                     //{
                     //    Name = RandomString(7)
                     //}
-                },
+                }
             };
         }
 
         private Customer2 GetCustomer2FromDB()
         {
-            return new Customer2()
+            return new Customer2
             {
                 DateOfBirth = RandomDay(),
                 FirstName = RandomString(7),
                 LastName = RandomString(8),
                 NumberOfOrders = RandomInt(1, 100),
-                Sub = new CustomerSubClass { Name = RandomString(10) },
+                Sub = new CustomerSubClass {Name = RandomString(10)},
                 ViewItems = new SimpleObject[5]
             }.Apply(o => 5.For(i => o.ViewItems.SetValue(new SimpleObject
             {
@@ -69,14 +69,15 @@ namespace AOMapperTests
                 Name = RandomString(6),
                 Inners = new List<SimpleObjectInner>(2)
                 {
-                    new SimpleObjectInner{Inner = "123"}, new SimpleObjectInner{Inner = "543"}
+                    new SimpleObjectInner {Inner = RandomString(4)},
+                    new SimpleObjectInner {Inner = RandomString(3)}
                 }
             }, i)));
         }
 
         private Customer4 GetCustomer4FromDB()
         {
-            return new Customer4()
+            return new Customer4
             {
                 DateOfBirth = RandomDay(),
                 FirstName = RandomString(7),
@@ -95,38 +96,51 @@ namespace AOMapperTests
 
         private Customer5 GetCustomer5FromDB()
         {
-            return new Customer5()
+            return new Customer5
+            {
+                DateOfBirth = RandomDay(),
+                FirstName = RandomString(7),
+                LastName = RandomString(8),
+                NumberOfOrders = RandomInt(1, 100),
+                Sub = new CustomerSubClass {Name = RandomString(10)},
+                DateTimes = new List<DateTime> {RandomDay(), RandomDay(), RandomDay()},
+                SubClass2 = new CustomerSubClass2
+                {
+                    DateTimes2 = new[] {RandomDay(), RandomDay()}
+                }
+            };
+        }
+
+        private Customer7 GetCustomer7FromDB()
+        {
+            return new Customer7
             {
                 DateOfBirth = RandomDay(),
                 FirstName = RandomString(7),
                 LastName = RandomString(8),
                 NumberOfOrders = RandomInt(1, 100),
                 Sub = new CustomerSubClass { Name = RandomString(10) },
-                DateTimes = new List<DateTime> { RandomDay(), RandomDay(), RandomDay()},
-                SubClass2 = new CustomerSubClass2
-                {
-                    DateTimes2 = new[] { RandomDay(), RandomDay() }
-                }
+                DateTimes = new List<DateTime> { RandomDay(), RandomDay(), RandomDay() }                
             };
         }
 
         private void PopulateCustomers(int count)
         {
             _customers.Clear();
-            for (int x = 0; x < count; x++)
+            for (var x = 0; x < count; x++)
             {
-                Customer customer = GetCustomerFromDB();
+                var customer = GetCustomerFromDB();
                 _customers.Add(customer);
             }
         }
 
         private List<CustomerSimpleViewItem> RunMapperSimple(IMap<Customer, CustomerSimpleViewItem> map)
         {
-            List<CustomerSimpleViewItem> customers = new List<CustomerSimpleViewItem>();
+            var customers = new List<CustomerSimpleViewItem>();
 
-            foreach (Customer customer in _customers)
+            foreach (var customer in _customers)
             {
-                CustomerSimpleViewItem customerViewItem = map.Do(customer);
+                var customerViewItem = map.Do(customer);
                 customers.Add(customerViewItem);
             }
             return customers;
@@ -134,11 +148,11 @@ namespace AOMapperTests
 
         private List<CustomerViewItem> RunMapper(IMap<Customer, CustomerViewItem> map)
         {
-            List<CustomerViewItem> customers = new List<CustomerViewItem>();
+            var customers = new List<CustomerViewItem>();
 
-            foreach (Customer customer in _customers)
+            foreach (var customer in _customers)
             {
-                CustomerViewItem customerViewItem = map.Do(customer);
+                var customerViewItem = map.Do(customer);
                 customers.Add(customerViewItem);
             }
             return customers;
@@ -146,15 +160,15 @@ namespace AOMapperTests
 
         private List<CustomerSimpleViewItem> RunManualSimple()
         {
-            List<CustomerSimpleViewItem> customers = new List<CustomerSimpleViewItem>();
+            var customers = new List<CustomerSimpleViewItem>();
 
-            foreach (Customer customer in _customers)
+            foreach (var customer in _customers)
             {
-                var customerViewManual = new CustomerSimpleViewItem()
+                var customerViewManual = new CustomerSimpleViewItem
                 {
                     FirstName = customer.FirstName,
                     LastName = customer.LastName,
-                    DateOfBirth = customer.DateOfBirth,
+                    DateOfBirth = customer.DateOfBirth
                 };
                 customers.Add(customerViewManual);
             }
@@ -163,11 +177,11 @@ namespace AOMapperTests
 
         private List<CustomerViewItem> RunManual()
         {
-            List<CustomerViewItem> customers = new List<CustomerViewItem>();
+            var customers = new List<CustomerViewItem>();
 
-            foreach (Customer customer in _customers)
+            foreach (var customer in _customers)
             {
-                var customerViewManual = new CustomerViewItem()
+                var customerViewManual = new CustomerViewItem
                 {
                     FirstName = customer.FirstName,
                     LastName = customer.LastName,
@@ -176,7 +190,7 @@ namespace AOMapperTests
                     SubName = customer.Sub.Name,
                     SubSubItem = new CustomerSubViewItem
                     {
-                        Name = customer.Sub.Name,
+                        Name = customer.Sub.Name
                         //Item = new CustomerSubViewItem
                         //{
                         //    Name = customer.Sub.SubClass.Name
@@ -190,11 +204,11 @@ namespace AOMapperTests
 
         private T RunTimedFunction<T>(Func<T> f, string text)
         {
-            Stopwatch stopwatch = new Stopwatch();
+            var stopwatch = new Stopwatch();
             stopwatch.Start();
             var result = f();
             stopwatch.Stop();
-            if(TestContext != null)
+            if (TestContext != null)
                 TestContext.WriteLine(text + stopwatch.ElapsedMilliseconds);
 
             return result;
@@ -202,13 +216,13 @@ namespace AOMapperTests
 
         private string RandomString(int size)
         {
-            StringBuilder builder = new StringBuilder();
+            var builder = new StringBuilder();
             char ch;
-            for (int i = 0; i < size; i++)
+            for (var i = 0; i < size; i++)
             {
-                ch = Convert.ToChar(Convert.ToInt32(Math.Floor(26 * random.NextDouble() + 65)));
+                ch = Convert.ToChar(Convert.ToInt32(Math.Floor(26*random.NextDouble() + 65)));
                 builder.Append(ch);
-                builder.Append((int)RandomInt(0, 1000));
+                builder.Append(RandomInt(0, 1000));
             }
 
             return builder.ToString();
@@ -221,9 +235,9 @@ namespace AOMapperTests
 
         private DateTime RandomDay()
         {
-            DateTime start = new DateTime(1995, 1, 1);
+            var start = new DateTime(1995, 1, 1);
 
-            int range = (DateTime.Today - start).Days;
+            var range = (DateTime.Today - start).Days;
             return start.AddDays(random.Next(range));
         }
     }

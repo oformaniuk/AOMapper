@@ -10,8 +10,8 @@ namespace AOMapperTests.Helpers
         public string Description { get; set; }
     }
 
-    public class CustomerSubViewItem2 : CustomerSubClass
-    {
-        public List<DateTime> DateTimes2 { get; set; } 
-    }
+    //public class CustomerSubViewItem2 : CustomerSubClass
+    //{
+    //    public List<DateTime> DateTimes2 { get; set; } 
+    //}
 }

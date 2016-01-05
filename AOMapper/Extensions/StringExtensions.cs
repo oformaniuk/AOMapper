@@ -4,7 +4,7 @@ using AOMapper.Data.Keys;
 
 namespace AOMapper.Extensions
 {
-    public static class StringExtensions
+    internal static class StringExtensions
     {
         public static IEnumerable<StringKey> ToStringKeys(this IEnumerable<string> enumerable)
         {

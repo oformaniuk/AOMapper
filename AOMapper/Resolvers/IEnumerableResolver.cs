@@ -36,7 +36,7 @@ namespace AOMapper.Resolvers
             return CreateIEnumerable(resolver, source, destination, map);
         }
 
-        public override void Resolve(object source, ref object destination)
+        public override object Resolve(object source)
         {
             throw new NotSupportedException("Use CreateIEnumerable to create target resolver");
         }

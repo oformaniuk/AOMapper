@@ -299,6 +299,11 @@ namespace AOMapper
 
         #region Gettes of the additional info
 
+        public IAccessObject GetAccessObject(StringKey name)
+        {
+            return _accessObjects[name];
+        }
+
         /// <summary>
         /// Gets the getter delegate.
         /// </summary>
@@ -309,13 +314,13 @@ namespace AOMapper
             return _accessObjects[name].GetGetter<TEntity, object>();
         }
 
-        public Func<TEntity, object> GetPlainGetter(StringKey name)
+        public Func<object, object> GetPlainGetter(StringKey name)
         {
             var accessObject = _accessObjects[name];
             return e => accessObject.Get(e);
         }
 
-        public Action<TEntity, object> GetPlainSetter(StringKey name)
+        public Action<object, object> GetPlainSetter(StringKey name)
         {
             var accessObject = _accessObjects[name];
             return (e, o) => accessObject.Set(e, o);
@@ -325,7 +330,7 @@ namespace AOMapper
         {
             return this.GetType().GetMethod("GetGetterGeneric", BindingFlags.NonPublic | BindingFlags.Instance)
                 .MakeGeneric(type)
-                .Invoke(this, new object[] {name});
+                .Invoke(this, new object[] {name.Value});
         }
 
         internal object GetReflectedSetter(StringKey name, Type type)
@@ -482,7 +487,7 @@ namespace AOMapper
         {
             if (o.GetIndexParameters().Any()) return; // indexers are not supported
 
-            if (AccessObjects.Value[type].ContainsKey(o.Name) && o.DeclaringType == type)
+            if (AccessObjects.Value[type].ContainsKey(o.Name) && o.DeclaringType == type.Value)
             {
                 AccessObjects.Value[type][o.Name] = new AccessObject<T, TR>
                 {
@@ -510,7 +515,7 @@ namespace AOMapper
         {
             //if (o.GetIndexParameters().Any()) return; // indexers are not supported
 
-            if (AccessObjects.Value[type].ContainsKey(o.Name) && o.DeclaringType == type)
+            if (AccessObjects.Value[type].ContainsKey(o.Name) && o.DeclaringType == type.Value)
             {
                 AccessObjects.Value[type][o.Name] = new AccessObject<T, TR>
                 {
@@ -548,8 +553,11 @@ namespace AOMapper
             ParameterExpression paramExpression = Expression.Parameter(type, "value");
 
             Expression propertyGetterExpression = Expression.Property(paramExpression, propertyInfo.Name);
-            
-            return Expression.Lambda<Func<T, TR>>(propertyGetterExpression, paramExpression).Compile();            
+
+            var expression = Expression.Lambda<Func<T, TR>>(propertyGetterExpression, paramExpression);
+            if (expression.CanReduce) 
+                expression = (Expression<Func<T, TR>>)expression.Reduce();
+            return expression.Compile();            
         }
 
         internal static Action<T, TR> GetValueSetter<T, TR>(PropertyInfo propertyInfo, Type type)
@@ -562,7 +570,7 @@ namespace AOMapper
 
             if (type.IsClass)
                 return (Action<T, TR>)Delegate.CreateDelegate(typeof(Action<T, TR>), propertyInfo.GetSetMethod());
-
+            
             ParameterExpression paramExpression = Expression.Parameter(type);
 
             ParameterExpression paramExpression2 = Expression.Parameter(propertyInfo.PropertyType, propertyInfo.Name);

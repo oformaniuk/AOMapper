@@ -1,10 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using AOMapper.Data.Keys;
 using AOMapper.Exceptions;
-using AOMapper.Extensions;
-using AOMapper.Helpers;
 
 namespace AOMapper.Data
 {
@@ -16,15 +13,41 @@ namespace AOMapper.Data
         private readonly List<CallStack<TSource, TDestination>> _callTree
             = new List<CallStack<TSource, TDestination>>();
 
-        protected Type _thisType;        
-
         protected DataProxy _dataProxy;
+
+        protected Type _thisType;
+
+        internal CallStack(StringKey route, CallStack<TSource, TDestination> parent, object value,
+            List<Map<MapObject<Func<TSource, object>>, MapObject<Action<TDestination, object>>>> maps,
+            Map<MapObject<Func<TSource, object>>, MapObject<Action<TDestination, object>>> map = null)
+        {
+            //Action = (o, o1) => o;
+            Route = route;
+            Parent = parent;
+            Value = value;
+            AdditionalMaps = maps;
+            Map = map;
+            GlobalSource = Parent == null ? default(TSource) : Parent.GlobalSource;
+            //if (string.IsNullOrEmpty(route.Value))
+            //{
+            //    if (Parent != null && Parent._callTree.Keys.Any())
+            //        route = Parent._callTree.Keys.Last() + 1;
+            //    else
+            //        route = "1";
+            //}
+
+            if (Parent != null)
+                Parent._callTree /*[route]*/.Add(this); // = this;
+        }
 
         public StringKey Route { get; set; }
         public CallStack<TSource, TDestination> Parent { get; set; }
         public object Value { get; set; }
-        public Func<object, object, object> Action { get; set; }
-        internal List<Map<MapObject<Func<TSource, object>>, MapObject<Action<TDestination, object>>>> AdditionalMaps { get; set; }
+        public Func<object, TSource, object> Action { get; internal set; }
+
+        internal List<Map<MapObject<Func<TSource, object>>, MapObject<Action<TDestination, object>>>> AdditionalMaps {
+            get; set; }
+
         internal Map<MapObject<Func<TSource, object>>, MapObject<Action<TDestination, object>>> Map { get; set; }
 
         public TSource GlobalSource { get; set; }
@@ -58,22 +81,24 @@ namespace AOMapper.Data
         //    return compiledMap;
         //}
 
-        public void Call(object source, object destination)
+        public void Call(TSource source, object destination)
         {
-            object value;// = destination ?? Value;
+            object value; // = destination ?? Value;
             //if (Action != null)
             //{
-                try
-                {
-                    value = Action(destination, source);
-                }
-                catch (NullReferenceException e)
-                {
-                    throw new ValueIsNotInitializedException("", e, Parent.Route, source != null ? source.GetType() : null, destination != null ? destination.GetType() : null);
-                }
+            try
+            {
+                value = Action(destination, source);
+            }
+            catch (NullReferenceException e)
+            {
+                throw new ValueIsNotInitializedException("", e, Parent.Route,
+                    source != null ? source.GetType() : null, destination != null ? destination.GetType() : null);
+            }
             //}
+            //else value = destination;
 
-            for (int i = 0; i < _callTree.Count; i++)
+            for (var i = 0; i < _callTree.Count; i++)
             {
                 _callTree[i].Call(source, value);
             }
@@ -82,10 +107,9 @@ namespace AOMapper.Data
             //{
             //    stack.Call(source, value);
             //}
-
         }
 
-        public void AddAction(Func<object, object, object> action)
+        public void AddAction(Func<object, TSource, object> action)
         {
             //var a = Action;
             //Action = (o, o1) => 
@@ -95,28 +119,5 @@ namespace AOMapper.Data
             //}; //+= action;
             Action += action;
         }
-
-        internal CallStack(StringKey route, CallStack<TSource, TDestination> parent, object value,
-            List<Map<MapObject<Func<TSource, object>>, MapObject<Action<TDestination, object>>>> maps, 
-            Map<MapObject<Func<TSource, object>>, MapObject<Action<TDestination, object>>> map = null)
-        {
-            Action = (o, o1) => o;
-            Route = route;
-            Parent = parent;
-            Value = value;
-            AdditionalMaps = maps;
-            Map = map;
-            GlobalSource = Parent == null ? default(TSource) : Parent.GlobalSource;
-            //if (string.IsNullOrEmpty(route.Value))
-            //{
-            //    if (Parent != null && Parent._callTree.Keys.Any())
-            //        route = Parent._callTree.Keys.Last() + 1;
-            //    else
-            //        route = "1";
-            //}
-
-            if(Parent != null)
-                Parent._callTree/*[route]*/.Add(this);// = this;
-        }        
-    }    
+    }
 }

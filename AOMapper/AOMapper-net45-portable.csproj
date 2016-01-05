@@ -83,9 +83,18 @@
     <Compile Include="AssemblyFileVersionDeployFix.cs">
       <DependentUpon>TextTransform.exe</DependentUpon>
     </Compile>
+    <Compile Include="Compiler\Compiler.cs" />
+    <Compile Include="Compiler\Helpers\ExpressionHelpers.cs" />
+    <Compile Include="Compiler\Helpers\ExpressionVisitor.cs" />
+    <Compile Include="Compiler\Resolvers\ArrayCompileTimeResolver.cs" />
+    <Compile Include="Compiler\Resolvers\CompileTimeResolver.cs" />
+    <Compile Include="Compiler\Resolvers\EnumCompileTimeResolver.cs" />
+    <Compile Include="Compiler\Resolvers\SimpleCompileTimeResolver.cs" />
     <Compile Include="DataProxy.cs" />
     <Compile Include="Data\AccessObject.cs" />
     <Compile Include="Data\ArgArray.cs" />
+    <Compile Include="Data\CallStack.cs" />
+    <Compile Include="Data\CallStackNode.cs" />
     <Compile Include="Data\CodeTreeNode.cs" />
     <Compile Include="Data\FieldMetadata.cs" />
     <Compile Include="Data\Keys\AbstractKey.cs" />
@@ -93,22 +102,36 @@
     <Compile Include="Data\Keys\TypeKey.cs" />
     <Compile Include="Data\Map.cs" />
     <Compile Include="Data\MapObject.cs" />
+    <Compile Include="Data\MappingCodeTree.cs" />
     <Compile Include="Data\MappingObject.cs" />
+    <Compile Include="Data\MappingRoute.cs" />
     <Compile Include="Data\MethodProperty.cs" />
     <Compile Include="Data\PropertyMap.cs" />
     <Compile Include="Exceptions\InvalidTypeBindingException.cs" />
+    <Compile Include="Exceptions\ValueIsNotInitializedException.cs" />
+    <Compile Include="Extensions\EnumerableExtensions.cs" />
     <Compile Include="Extensions\FuncExtensions.cs" />
     <Compile Include="Extensions\ObjectExtensions.cs" />
+    <Compile Include="Extensions\ReflectionExtensions.cs" />
+    <Compile Include="Extensions\StringExtensions.cs" />
     <Compile Include="Extensions\TypeExtensions.cs" />
+    <Compile Include="Helpers\CastTo.cs" />
+    <Compile Include="Helpers\Lazy.cs" />
+    <Compile Include="Helpers\RouteHelpers.cs" />
+    <Compile Include="Helpers\SimpleLazy.cs" />
     <Compile Include="Interfaces\IAccessObject.cs" />
     <Compile Include="Interfaces\IMap.cs" />
     <Compile Include="Interfaces\IPathProvider.cs" />
     <Compile Include="Interfaces\Keys\IKey.cs" />
     <Compile Include="Mapper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Resolvers\ActivationResolver.cs" />
     <Compile Include="Resolvers\ArrayResolver.cs" />
-    <Compile Include="Resolvers\ListResolver.cs" />
+    <Compile Include="Resolvers\ChangeTypeResolver.cs" />
+    <Compile Include="Resolvers\EnumResolver.cs" />
+    <Compile Include="Resolvers\IEnumerableResolver.cs" />
     <Compile Include="Resolvers\Resolver.cs" />
+    <Compile Include="Resolvers\ResolverFactory.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="TextTransform.exe" />
@@ -116,9 +139,7 @@
   <ItemGroup>
     <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Helpers\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
   <PropertyGroup>
     <PreBuildEvent>

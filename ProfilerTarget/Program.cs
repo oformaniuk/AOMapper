@@ -38,6 +38,8 @@ namespace ProfilerTarget
             {
                 Mapper.Clear();
                 s.Start();
+                Mapper.Create<SimpleObject, SimpleObjectViewItem>().Auto().Compile();
+                Mapper.Create<SimpleObjectInner, SimpleObjectViewItemInner>().Auto().Compile();
                 var o = (IMap<Customer2, CustomerViewItem2>)Mapper.Create<Customer2, CustomerViewItem2>()
                     .ConfigMap(x => x.CompileInnerMaps = true)
                     .Auto()
@@ -70,7 +72,7 @@ namespace ProfilerTarget
                 //var mapperResult = RunTimedFunction((s) => RunMapper(map, s), string.Format("Mapper with {0} elements: ", x));
                 var mapperCompiledResult = RunTimedFunction((s) => RunMapper(mapCompiled, s), string.Format("Mapper (Compiled) with {0} elements: ", x));
                 //var autoMapperResult = RunTimedFunction(RunAutoMapper<Customer2, CustomerViewItem2>, string.Format("AutoMapper with {0} elements: ", x));                
-                //var manualResult = RunTimedFunction(RunManual2, string.Format("Manual with {0} elements: ", x));
+                var manualResult = RunTimedFunction(RunManual2, string.Format("Manual with {0} elements: ", x));
 
                 //GC.Collect(2);
                 //Thread.Sleep(20);
@@ -195,7 +197,9 @@ namespace ProfilerTarget
                     SubName = customer.Sub.Name,
                     SubSubItem = new CustomerSubViewItem { Name = customer.Sub.Name },
                     ViewItems = new SimpleObjectViewItem[5]
-                }.Apply(o => 5.For(i => o.ViewItems.SetValue(new SimpleObjectViewItem()
+                };
+
+                5.For(i => customerViewManual.ViewItems.SetValue(new SimpleObjectViewItem()
                 {
                     Date = customer.ViewItems[i].Date,
                     Name = customer.ViewItems[i].Name,
@@ -203,7 +207,7 @@ namespace ProfilerTarget
                 {
                     new SimpleObjectViewItemInner{Inner = "123"}, new SimpleObjectViewItemInner{Inner = "543"}
                 }
-                }, i)));
+                }, i));
                 s.Stop();
             }
 

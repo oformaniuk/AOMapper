@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 using AOMapper;
 using AOMapper.Extensions;
+using AOMapper.Helpers;
 using AOMapper.Interfaces;
 using AOMapper.Resolvers;
 using AOMapperTests.Helpers;
@@ -25,633 +27,376 @@ namespace AOMapperTests
         public TestContext TestContext { get; set; }
 
         [TestMethod]
-        public void CreateMapTest()
+        public void NonCompiledTest()
         {
-            Mapper.Clear();
-            var first = Mapper.Create<Customer, CustomerSimpleViewItem>();
-            var second = Mapper.Create<CustomerSimpleViewItem, Customer>();
-            var third = Mapper.Create<Customer, CustomerSimpleViewItem>();
-
-            Assert.AreEqual(first, third);
-            Assert.AreNotEqual(first, second);
-        }
-
-        [TestMethod]
-        public void CreateMapAutoTest()
-        {
-            Mapper.Clear();
-            var first = Mapper.Create<Customer, CustomerViewItem>().Auto();
-            var second = Mapper.Create<CustomerViewItem, Customer>().Auto();
-            var third = Mapper.Create<Customer, CustomerViewItem>().Auto();
-
-            Assert.AreEqual(first, third);
-            Assert.AreNotEqual(first, second);
-        }
-
-        [TestMethod]
-        public void SimpleMapTest()
-        {
-            Mapper.Clear();
-            var map = Mapper.Create<Customer, CustomerSimpleViewItem>();
-            var customer = GetCustomerFromDB();
-            var customerViewMapper = map.Do(customer);
-            var customerViewManual = new CustomerSimpleViewItem
-            {
-                FirstName = customer.FirstName,
-                LastName = customer.LastName,
-                DateOfBirth = customer.DateOfBirth
-            };
-
-            Assert.AreEqual(customerViewMapper, customerViewManual);
-        }
-
-        [TestMethod]
-        public void SimpleMapAutoTest()
-        {
-            Mapper.Clear();
-            var map = Mapper.Create<Customer, CustomerSimpleViewItem>()
-                .Auto();
-
-            var customer = GetCustomerFromDB();
-            var customerViewMapper = map.Do(customer);
-            var customerViewManual = new CustomerSimpleViewItem
-            {
-                FirstName = customer.FirstName,
-                LastName = customer.LastName,
-                DateOfBirth = customer.DateOfBirth
-            };
-
-            Assert.AreEqual(customerViewMapper, customerViewManual);
-        }
-
-        [TestMethod]
-        public void SimpleMapLocalResolverTest()
-        {
-            Mapper.Clear();
-            var map = Mapper.Create<Customer, CustomerSimpleViewItem3>()
-                .Remap("NumberOfOrders", "NumberOfOrders", new Resolver<int, string>(s => s.ToString()))
-                .Auto();
-
-            var customer = GetCustomerFromDB();
-            var customerViewMapper = map.Do(customer);
-            var customerViewManual = new CustomerSimpleViewItem3
-            {
-                FirstName = customer.FirstName,
-                LastName = customer.LastName,
-                DateOfBirth = customer.DateOfBirth,
-                NumberOfOrders = customer.NumberOfOrders.ToString()
-            };
-
-            Assert.AreEqual(customerViewMapper, customerViewManual);
-        }
-
-        //[TestMethod]
-        //public void SimpleMapResolverExceptionTest()
-        //{
-        //    Mapper.Clear();
-
-        //    IMap<Customer, CustomerSimpleViewItem3> map;
-        //    try
-        //    {
-        //        map = Mapper.Create<Customer, CustomerSimpleViewItem3>()                
-        //            .Auto()
-        //            .Remap("NumberOfOrders", "NumberOfOrders", new Resolver<int, string>(s => s.ToString()));
-        //    }
-        //    catch (InvalidTypeBindingException e)
-        //    {
-        //        return;
-        //    }
-
-
-        //    Assert.Fail("Exception was not thrown");
-        //}
-
-        [TestMethod]
-        public void SimpleMapGlobalResolverTest()
-        {
-            Mapper.Clear();
-            var map = Mapper.Create<Customer6, CustomerSimpleViewItem6>()
-                .ConfigMap(o => o.RegisterResolver<int, string>(r => r.ToString()))
-                .Auto();
-
-            var customer = GetCustomer6FromDB();
-            var customerViewMapper = map.Do(customer);
-            var customerViewManual = new CustomerSimpleViewItem6
-            {
-                FirstName = customer.FirstName,
-                LastName = customer.LastName,
-                DateOfBirth = customer.DateOfBirth,
-                NumberOfOrders = customer.NumberOfOrders.ToString(),
-                Color = (int) ConsoleColor.Blue,
-                Cast = 42
-            };
-
-            Assert.AreEqual(customerViewMapper, customerViewManual);
-        }
-
-        [TestMethod]
-        public void SimpleMapGlobalDictResolverTest()
-        {
-            Mapper.Clear();
-            var map = Mapper.Create<Customer4, CustomerSimpleViewItem4>()
-                .ConfigMap(o => o.RegisterResolver<Dictionary<int, DateTime>, Dictionary<string, string>>
-                    (times =>
-                        times.ToDictionary(dateTime => dateTime.Key.ToString(), dateTime => dateTime.Value.ToString())))
-                .Auto();
-
-            var customer = GetCustomer4FromDB();
-            var customerViewMapper = map.Do(customer);
-            var customerViewManual = new CustomerSimpleViewItem4
-            {
-                FirstName = customer.FirstName,
-                LastName = customer.LastName,
-                DateOfBirth = customer.DateOfBirth,
-                DateTimes =
-                    customer.DateTimes.ToDictionary(dateTime => dateTime.Key.ToString(),
-                        dateTime => dateTime.Value.ToString())
-            };
-
-            Assert.AreEqual(customerViewMapper, customerViewManual);
-            Assert.IsTrue(customerViewMapper.DateTimes.SequenceEqual(customerViewManual.DateTimes));
-        }
-
-        [TestMethod]
-        public void SimpleMapSameTypeCollectionResolverTest()
-        {
-            Mapper.Clear();
-            var map = Mapper.Create<Customer5, CustomerSimpleViewItem5>()
-                .Auto()
-                .Remap(o => o.DateTimes, o => o.DateTimes)
-                .RemapFrom(o => o.SubViewItem2.DateTimes2, o => o.DateTimes);
-            //.Remap(o => o.SubClass2.DateTimes2, o => o.SubViewItem2.DateTimes2);
-
-            var customer = GetCustomer5FromDB();
-            var customerViewMapper = map.Do(customer);
-            var customerViewManual = new CustomerSimpleViewItem5
-            {
-                FirstName = customer.FirstName,
-                LastName = customer.LastName,
-                DateOfBirth = customer.DateOfBirth,
-                DateTimes = customer.DateTimes.ToArray()
-            };
-
-            Assert.AreEqual(customerViewMapper, customerViewManual);
-            Assert.IsTrue(customerViewMapper.DateTimes.SequenceEqual(customerViewManual.DateTimes));
-        }
-
-        [TestMethod]
-        public void SimpleMapPerformanceTest()
-        {
-            Mapper.Clear();
-            var map = RunTimedFunction(Mapper.Create<Customer, CustomerSimpleViewItem>, "Map initialization: ");
-
-            for (var x = 1; x <= PerformanceCount; x *= 10)
-            {
-                PopulateCustomers(x);
-
-                var mapperResult = RunTimedFunction(() => RunMapperSimple(map),
-                    string.Format("Mapper with {0} elements: ", x));
-
-                var manualResult = RunTimedFunction(RunManualSimple, string.Format("Manual with {0} elements: ", x));
-
-                CollectionAssert.AreEqual(mapperResult, manualResult);
-
-                Console.WriteLine();
-                Console.WriteLine();
-            }
-        }
-
-        [TestMethod]
-        public void SimpleMapCompiledPerformanceTest()
-        {
-            Mapper.Clear();
-            var map = RunTimedFunction(Mapper.Create<Customer, CustomerSimpleViewItem>, "Map initialization: ");
-            map = RunTimedFunction(() => map.Compile(), "Map compilation: ");
-
-            for (var x = 1; x <= PerformanceCount; x *= 10)
-            {
-                PopulateCustomers(x);
-
-                var mapperResult = RunTimedFunction(() => RunMapperSimple(map),
-                    string.Format("Mapper with {0} elements: ", x));
-
-                var manualResult = RunTimedFunction(RunManualSimple, string.Format("Manual with {0} elements: ", x));
-
-                CollectionAssert.AreEqual(mapperResult, manualResult);
-
-                Console.WriteLine();
-                Console.WriteLine();
-            }
-        }
-
-        [TestMethod]
-        public void SimpleMapDefaultIgnoreTest()
-        {
-            Mapper.Clear();
-            var map = Mapper.Create<Customer, CustomerSimpleViewItem>()
-                .ConfigMap(config => config.IgnoreDefaultValues = true);
-
-            var customer = GetCustomerFromDB()
-                .Apply(o => o.FirstName = (string) o.FirstName.GetType().GetDefault());
-            var customerViewMapper = map.Do(customer);
-            var customerViewManual = new CustomerSimpleViewItem
-            {
-                FirstName = customer.FirstName,
-                LastName = customer.LastName,
-                DateOfBirth = customer.DateOfBirth
-            };
-
-            Assert.AreEqual(customerViewMapper, customerViewManual);
-        }
-
-        [TestMethod]
-        public void MapTest()
-        {
-            Mapper.Clear();
-
-            var map = Mapper.Create<Customer, CustomerViewItem>();
-            map.Remap<string>("Sub/Name", "SubName");
-            map.Remap<string>("Sub/Name", "SubSubItem/Name");
-
-            var customer = GetCustomerFromDB();
-            var customerViewMapper = map.Do(customer);
-            var customerViewManual = new CustomerViewItem
-            {
-                FirstName = customer.FirstName,
-                LastName = customer.LastName,
-                DateOfBirth = customer.DateOfBirth,
-                NumberOfOrders = customer.NumberOfOrders,
-                SubName = customer.Sub.Name
-            };
-
-            Assert.AreEqual(customerViewMapper, customerViewManual);
-        }
-
-        [TestMethod]
-        public void MapClearTest()
-        {
-            Mapper.Clear();
-
-            var map = Mapper.Create<Customer, CustomerViewItem>();
-            map.Remap<string>("Sub/Name", "SubName");
-            map.Remap<string>("Sub/Name", "SubSubItem/Name");
-
-            var customer = GetCustomerFromDB();
-            var customerViewMapper = map.Do(customer);
-            var customerViewManual = new CustomerViewItem
-            {
-                FirstName = customer.FirstName,
-                LastName = customer.LastName,
-                DateOfBirth = customer.DateOfBirth,
-                NumberOfOrders = customer.NumberOfOrders,
-                SubName = customer.Sub.Name
-            };
-
-            Mapper.Clear();
-
-            var map2 = Mapper.Create<Customer, CustomerViewItem>();
-            map.Remap<string>("Sub/Name", "SubName");
-            map.Remap<string>("Sub/Name", "SubSubItem/Name");
-
-            Assert.IsFalse(ReferenceEquals(map, map2));
-        }
-
-        [TestMethod]
-        public void MapGetDestinationPathTest()
-        {
-            Mapper.Clear();
-
-            var map = Mapper.Create<Customer, CustomerViewItem>();
-            map.Remap<string>("Sub/Name", "SubName");
-
-            var result = map.As<IPathProvider>().GetDestinationPath("Sub/Name");
-            var result1 = map.As<IPathProvider>().GetDestinationPath((Customer o) => o.Sub.Name);
-
-            Assert.AreEqual(result, "SubName");
-            Assert.AreEqual(result1, "SubName");
-        }
-
-        [TestMethod]
-        public void MapGetDestinationPathAmbiousTest()
-        {
-            Mapper.Clear();
-
-            var map = Mapper.Create<Customer, CustomerViewItem>();
-            map.Remap<string>("Sub/Name", "SubName");
-            map.Remap<string>("Sub/Name", "SubSubItem/Name");
-
             try
             {
-                map.As<IPathProvider>().GetDestinationPath("Sub/Name");
+                Mapper.Clear();
+                var mapper = Mapper.Create<Customer, CustomerSimpleViewItem>()
+                    .Auto();
+
+                var obj = GetCustomerFromDB();
+                mapper.Do(obj);
                 Assert.Fail("Exception was not thrown");
             }
-            catch (AmbiguousMatchException)
+            catch(InvalidOperationException)
             {
                 return;
             }
-
-            Assert.Fail("Exception was not catch");
         }
 
         [TestMethod]
-        public void MapGetSourcePathTest()
-        {
-            Mapper.Clear();
-            Func<CustomerSubClass, string> func = @class => @class.Name;
-            Func<CustomerViewItem, CustomerViewItem> n = item =>
-                item.Apply(o => o.SubSubItem = new CustomerSubViewItem());
-
-            var map = Mapper.Create<Customer, CustomerViewItem>();
-            map.ConfigMap(o => o.Separator = '.');
-            map.Remap<string>("Sub.Name", "SubName");
-            map.Remap<string>("Sub.Name", "SubSubItem.Name");
-
-            //var result = map.As<IPathProvider>().GetSourcePath((CustomerViewItem o) => n(o).SubSubItem.Name);
-
-            //Assert.AreEqual(result, "Sub.Name");
-        }
-
-        [TestMethod]
-        public void MapAutoTest()
-        {
-            Mapper.Clear();
-            var map = Mapper.Create<Customer, CustomerViewItem>()
-                .Auto();
-
-            var customer = GetCustomerFromDB();
-            var customerViewMapper = map.Do(customer);
-            var customerViewManual = new CustomerViewItem
-            {
-                FirstName = customer.FirstName,
-                LastName = customer.LastName,
-                DateOfBirth = customer.DateOfBirth,
-                NumberOfOrders = customer.NumberOfOrders,
-                SubName = customer.Sub.Name
-            };
-
-            Assert.AreEqual(customerViewMapper, customerViewManual);
-        }
-
-        [TestMethod]
-        public void MapComplexObjectTest()
+        public void AutoMappingTest()
         {
             Mapper.Clear();
 
-            var map = Mapper.Create<Customer2, CustomerViewItem2>()
-                .Auto();
-
-            var customer = GetCustomer2FromDB();
-            var customerViewMapper = map.Do(customer);
-
-            var customerViewManual = new CustomerViewItem2
-            {
-                FirstName = customer.FirstName,
-                LastName = customer.LastName,
-                DateOfBirth = customer.DateOfBirth,
-                NumberOfOrders = customer.NumberOfOrders,
-                SubName = customer.Sub.Name,
-                SubSubItem = new CustomerSubViewItem {Name = customer.Sub.Name},
-                ViewItems = new SimpleObjectViewItem[5]
-            }.Apply(o => 5.For(i => o.ViewItems.SetValue(new SimpleObjectViewItem
-            {
-                Date = customer.ViewItems[i].Date,
-                Name = customer.ViewItems[i].Name,
-                Inners = new List<SimpleObjectViewItemInner>(2)
-                {
-                    new SimpleObjectViewItemInner {Inner = "123"},
-                    new SimpleObjectViewItemInner {Inner = "543"}
-                }
-            }, i)));
-
-            Assert.AreEqual(customerViewMapper, customerViewManual);
-        }
-
-        [TestMethod]
-        public void MapComplexObjectIgnoreTest()
-        {
-            Mapper.Clear();
-
-            var map = Mapper.Create<Customer2, CustomerViewItem2>()
-                .ConfigMap(o => o.IgnoreDefaultValues = true)
+            var mapper = Mapper.Create<Customer, CustomerSimpleViewItem>()
                 .Auto()
+                .Remap(o => o.Sub.Name, o => o.SubDescription)                
                 .Compile();
 
-            var customer = GetCustomer2FromDB().Apply(o => o.LastName = null);
-            var customerViewMapper = map.Do(customer);
-
-            var customerViewManual = new CustomerViewItem2
+            var obj = GetCustomerFromDB();
+            var autoMap = mapper.Do(obj);
+            var manual = new CustomerSimpleViewItem
             {
-                FirstName = customer.FirstName,
-                LastName = customer.LastName,
-                DateOfBirth = customer.DateOfBirth,
-                NumberOfOrders = customer.NumberOfOrders,
-                SubName = customer.Sub.Name,
-                SubSubItem = new CustomerSubViewItem {Name = customer.Sub.Name},
-                ViewItems = new SimpleObjectViewItem[5]
-            }.Apply(o => 5.For(i => o.ViewItems.SetValue(new SimpleObjectViewItem
-            {
-                Date = customer.ViewItems[i].Date,
-                Name = customer.ViewItems[i].Name,
-                Inners = new List<SimpleObjectViewItemInner>(2)
+                DateOfBirth = obj.DateOfBirth,
+                FirstName = obj.FirstName,
+                LastName = obj.LastName,
+                SubDescription = obj.Sub.Name,
+                SubName = obj.Sub.Name,
+                SubSubItem = new CustomerSubViewItem
                 {
-                    new SimpleObjectViewItemInner {Inner = "123"},
-                    new SimpleObjectViewItemInner {Inner = "543"}
+                    Name = obj.Sub.Name,
+                    Description = obj.Sub.Name
                 }
-            }, i)));
+            };
 
-            Assert.AreEqual(customerViewMapper, customerViewManual);
+            Assert.AreEqual(autoMap, manual);
         }
 
         [TestMethod]
-        public void MapAutoPerformanceTest()
+        public void RemapFromTest()
         {
             Mapper.Clear();
-            var map = RunTimedFunction(() => Mapper.Create<Customer, CustomerViewItem>().Auto(),
-                "Map (Auto) initialization: ");
 
-            for (var x = 1; x <= PerformanceCount; x *= 10)
+            var mapper = Mapper.Create<Customer, CustomerSimpleViewItem>()
+                .Auto()
+                .RemapFrom(o => o.SubDescription, o => o.Sub.Name + " Test")
+                .Compile();
+
+            var obj = GetCustomerFromDB();
+            var autoMap = mapper.Do(obj);
+            var manual = new CustomerSimpleViewItem
             {
-                PopulateCustomers(x);
-
-                var mapperResult = RunTimedFunction(() => RunMapper(map), string.Format("Mapper with {0} elements: ", x));
-
-                var manualResult = RunTimedFunction(RunManual, string.Format("Manual with {0} elements: ", x));
-
-                CollectionAssert.AreEqual(mapperResult, manualResult);
-
-                Console.WriteLine();
-                Console.WriteLine();
-            }
-        }
-
-        [TestMethod]
-        public void MapAutoCompiledPerformanceTest()
-        {
-            Mapper.Clear();
-            var map = RunTimedFunction(() => Mapper.Create<Customer, CustomerViewItem>().Auto(),
-                "Map (Auto) initialization: ");
-            map = RunTimedFunction(() => map.Compile(), "Map compilation: ");
-
-            for (var x = 1; x <= PerformanceCount; x *= 10)
-            {
-                PopulateCustomers(x);
-
-                var mapperResult = RunTimedFunction(() => RunMapper(map), string.Format("Mapper with {0} elements: ", x));
-
-                var manualResult = RunTimedFunction(RunManual, string.Format("Manual with {0} elements: ", x));
-
-                CollectionAssert.AreEqual(mapperResult, manualResult);
-
-                Console.WriteLine();
-                Console.WriteLine();
-            }
-        }
-
-        [TestMethod]
-        public void MapPerformanceTest()
-        {
-            Mapper.Clear();
-            //Func<CustomerSubClass, string> func = @class => @class.Name;
-            //Func<CustomerViewItem, CustomerViewItem> n = item =>
-            //    item.Apply(o => o.SubSubItem = new CustomerSubViewItem());
-
-            var map = RunTimedFunction(() =>
-            {
-                var o = Mapper.Create<Customer, CustomerViewItem>();
-                o.Remap<string>("Sub/Name", "SubName");
-                //o.Remap<string>("Sub/Name", "SubSubItem/Name");
-                //o.Remap(x => x.Sub.SubClass.Name, x => x.SubSubItem.Item.Name);
-
-                return o;
-            }, "Map initialization: ");
-
-            RunTimedFunction(() =>
-            {
-                AutoMapper.Mapper.CreateMap<Customer, CustomerViewItem>()
-                    .ForMember(o => o.SubName, o => o.MapFrom(x => x.Sub.Name));
-                //.ForMember(o => o.SubSubItem.Name, o => o.MapFrom(x => x.Sub.Name))
-                //.ForMember(o => o.SubSubItem.Item.Name, o => o.MapFrom(x => x.Sub.SubClass.Name));
-
-                return 1;
-            }, "Automapper initialization: ");
-
-            for (var x = 1; x <= PerformanceCount; x *= 10)
-            {
-                PopulateCustomers(x);
-
-                var mapperResult = RunTimedFunction(() => RunMapper(map), string.Format("Mapper with {0} elements: ", x));
-                var autoMapperResult = RunTimedFunction(() =>
+                DateOfBirth = obj.DateOfBirth,
+                FirstName = obj.FirstName,
+                LastName = obj.LastName,
+                SubDescription = obj.Sub.Name + " Test",
+                SubName = obj.Sub.Name,
+                SubSubItem = new CustomerSubViewItem
                 {
-                    var customers = new List<CustomerViewItem>();
+                    Name = obj.Sub.Name,
+                    Description = obj.Sub.Name
+                }
+            };
 
-                    foreach (var customer in _customers)
+            Assert.AreEqual(autoMap, manual);
+        }
+
+        [TestMethod]
+        public void NonStandartTest()
+        {
+            Mapper.Clear();
+
+            var mapper = Mapper.Create<Customer, CustomerSimpleViewItem>(o => new CustomerSimpleViewItem(o.Sub.Name + " Test"))
+                .Auto()                
+                .Compile();
+
+            var obj = GetCustomerFromDB();
+            var autoMap = mapper.Do(obj);
+            var manual = new CustomerSimpleViewItem
+            {
+                DateOfBirth = obj.DateOfBirth,
+                FirstName = obj.FirstName,
+                LastName = obj.LastName,
+                SubDescription = obj.Sub.Name + " Test",
+                SubName = obj.Sub.Name,
+                SubSubItem = new CustomerSubViewItem
+                {
+                    Name = obj.Sub.Name,
+                    Description = obj.Sub.Name
+                }
+            };
+
+            Assert.AreEqual(autoMap, manual);
+        }
+
+        [TestMethod]
+        public void LocalResolverTest()
+        {
+            Mapper.Clear();
+
+            var mapper = Mapper.Create<Customer, CustomerSimpleViewItem>()
+                .Auto()
+                .Remap(o => o.DateOfBirth, o => o.SubDescription, time => time.ToString())
+                .Compile();
+
+            var obj = GetCustomerFromDB();
+            var autoMap = mapper.Do(obj);
+            var manual = new CustomerSimpleViewItem
+            {
+                DateOfBirth = obj.DateOfBirth,
+                FirstName = obj.FirstName,
+                LastName = obj.LastName,
+                SubDescription = obj.DateOfBirth.ToString(),
+                SubName = obj.Sub.Name,
+                SubSubItem = new CustomerSubViewItem
+                {
+                    Name = obj.Sub.Name,
+                    Description = obj.Sub.Name
+                }
+            };
+
+            Assert.AreEqual(autoMap, manual);
+        }
+
+        [TestMethod]
+        public void GeneralResolverTest()
+        {
+            Mapper.Clear();
+
+            var simpleResolver = new SimpleResolver<DateTime, string>(time => time.ToString());
+
+            var mapper = Mapper.Create<Customer, CustomerSimpleViewItem>()
+                .ConfigMap(o => o.RegisterResolver(simpleResolver))
+                .Auto()
+                .Remap(o => o.DateOfBirth, o => o.SubDescription)
+                .Compile();
+
+            var obj = GetCustomerFromDB();
+            var autoMap = mapper.Do(obj);
+            var manual = new CustomerSimpleViewItem
+            {
+                DateOfBirth = obj.DateOfBirth,
+                FirstName = obj.FirstName,
+                LastName = obj.LastName,
+                SubDescription = obj.DateOfBirth.ToString(),
+                SubName = obj.Sub.Name,
+                SubSubItem = new CustomerSubViewItem
+                {
+                    Name = obj.Sub.Name,
+                    Description = obj.Sub.Name
+                }
+            };
+
+            Assert.AreEqual(autoMap, manual);
+        }
+
+        [TestMethod]
+        public void ListToListTest()
+        {
+            Mapper.Clear();
+
+            var simpleResolver = new SimpleResolver<DateTime, string>(time => time.ToString());
+
+            var mapper = Mapper.Create<Customer7, CustomerSimpleViewItem7>()
+                .ConfigMap(o => o.RegisterResolver(simpleResolver))
+                .Auto()
+                .Remap(o => o.DateOfBirth, o => o.SubDescription)
+                .Compile();
+
+            var obj = GetCustomer7FromDB();
+            var autoMap = mapper.Do(obj);
+            var manual = new CustomerSimpleViewItem7
+            {
+                DateOfBirth = obj.DateOfBirth,
+                FirstName = obj.FirstName,
+                LastName = obj.LastName,
+                SubDescription = obj.DateOfBirth.ToString(),
+                SubName = obj.Sub.Name,
+                SubSubItem = new CustomerSubViewItem
+                {
+                    Name = obj.Sub.Name,
+                    Description = obj.Sub.Name
+                },
+                DateTimes = new List<DateTime>(obj.DateTimes)
+            };
+
+            Assert.AreEqual(autoMap, manual);
+            Assert.IsTrue(autoMap.DateTimes.SequenceEqual(manual.DateTimes));
+        }
+
+        [TestMethod]
+        public void ListToListWithResolverTest()
+        {
+            Mapper.Clear();
+
+            var simpleResolver = new SimpleResolver<DateTime, string>(time => time.ToString());
+
+            var mapper = Mapper.Create<Customer7, CustomerSimpleViewItem8>()
+                .ConfigMap(o => o.RegisterResolver(simpleResolver))
+                .Auto()
+                .Remap(o => o.DateOfBirth, o => o.SubDescription)
+                .Compile();
+
+            var obj = GetCustomer7FromDB();
+            var autoMap = mapper.Do(obj);
+            var manual = new CustomerSimpleViewItem8
+            {
+                DateOfBirth = obj.DateOfBirth,
+                FirstName = obj.FirstName,
+                LastName = obj.LastName,
+                SubDescription = obj.DateOfBirth.ToString(),
+                SubName = obj.Sub.Name,
+                SubSubItem = new CustomerSubViewItem
+                {
+                    Name = obj.Sub.Name,
+                    Description = obj.Sub.Name
+                },
+                DateTimes = new List<string>(obj.DateTimes.Select(o => o.ToString()))
+            };
+
+            Assert.AreEqual(autoMap, manual);
+            Assert.IsTrue(autoMap.DateTimes.SequenceEqual(manual.DateTimes));
+        }
+
+        [TestMethod]
+        public void ListToArrayTest()
+        {
+            Mapper.Clear();            
+
+            var mapper = Mapper.Create<Customer7, CustomerSimpleViewItem5>()                
+                .Auto()
+                .Remap(o => o.DateOfBirth, o => o.SubDescription, time => time.ToString())
+                .Compile();
+
+            var obj = GetCustomer7FromDB();
+            var autoMap = mapper.Do(obj);
+            var manual = new CustomerSimpleViewItem5
+            {
+                DateOfBirth = obj.DateOfBirth,
+                FirstName = obj.FirstName,
+                LastName = obj.LastName,
+                SubDescription = obj.DateOfBirth.ToString(),
+                SubName = obj.Sub.Name,
+                SubSubItem = new CustomerSubViewItem
+                {
+                    Name = obj.Sub.Name,
+                    Description = obj.Sub.Name
+                },
+                DateTimes = new List<DateTime>(obj.DateTimes).ToArray()
+            };
+
+            Assert.AreEqual(autoMap, manual);
+            Assert.IsTrue(autoMap.DateTimes.SequenceEqual(manual.DateTimes));
+        }
+
+        [TestMethod]
+        public void ListToArrayWithResolverTest()
+        {
+            Mapper.Clear();
+
+            var mapper = Mapper.Create<Customer7, CustomerSimpleViewItem9>()
+                .ConfigMap(o => o.RegisterResolver<DateTime, string>(x => x.ToString()))
+                .Auto()
+                .Remap(o => o.DateOfBirth, o => o.SubDescription)
+                .Compile();
+
+            var obj = GetCustomer7FromDB();
+            var autoMap = mapper.Do(obj);
+            var manual = new CustomerSimpleViewItem9
+            {
+                DateOfBirth = obj.DateOfBirth,
+                FirstName = obj.FirstName,
+                LastName = obj.LastName,
+                SubDescription = obj.DateOfBirth.ToString(),
+                SubName = obj.Sub.Name,
+                SubSubItem = new CustomerSubViewItem
+                {
+                    Name = obj.Sub.Name,
+                    Description = obj.Sub.Name
+                },
+                DateTimes = new List<string>(obj.DateTimes.Select(x => x.ToString())).ToArray()
+            };
+
+            Assert.AreEqual(autoMap, manual);
+            Assert.IsTrue(autoMap.DateTimes.SequenceEqual(manual.DateTimes));
+        }
+
+        [TestMethod]
+        public void CastTest()
+        {
+            Mapper.Clear();
+
+            var mapper = Mapper.Create<Customer6, CustomerSimpleViewItem6>()
+                .ConfigMap(o => o.RegisterResolver<DateTime, string>(x => x.ToString()))
+                .Auto()
+                .Remap(o => o.DateOfBirth, o => o.SubDescription)
+                .Remap(o => o.NumberOfOrders, o => o.NumberOfOrders, i => i.ToString())
+                .Compile();
+
+            var obj = GetCustomer6FromDB();
+            var autoMap = mapper.Do(obj);
+            var manual = new CustomerSimpleViewItem6
+            {
+                DateOfBirth = obj.DateOfBirth,
+                FirstName = obj.FirstName,
+                LastName = obj.LastName,
+                SubDescription = obj.DateOfBirth.ToString(),
+                SubName = obj.Sub.Name,
+                SubSubItem = new CustomerSubViewItem
+                {
+                    Name = obj.Sub.Name,
+                    Description = obj.Sub.Name
+                },
+                Cast = obj.Cast,
+                Color = CastTo<int>.From(obj.Color),
+                NumberOfOrders = obj.NumberOfOrders.ToString()
+            };
+
+            Assert.AreEqual(autoMap, manual);            
+        }
+
+        [TestMethod]
+        public void ComplexSequenceTest()
+        {
+            Mapper.Clear();
+
+            var simpleResolver = new SimpleResolver<DateTime, string>(time => time.ToString());
+
+            var mapper = Mapper.Create<Customer2, CustomerSimpleViewItem10>()
+                .ConfigMap(o => o.RegisterResolver(simpleResolver))
+                .Auto()
+                .Remap(o => o.DateOfBirth, o => o.SubDescription)
+                .Compile();
+
+            var obj = GetCustomer2FromDB();
+            var autoMap = mapper.Do(obj);
+            var manual = new CustomerSimpleViewItem10
+            {
+                DateOfBirth = obj.DateOfBirth,
+                FirstName = obj.FirstName,
+                LastName = obj.LastName,
+                SubDescription = obj.DateOfBirth.ToString(),
+                SubName = obj.Sub.Name,
+                SubSubItem = new CustomerSubViewItem
+                {
+                    Name = obj.Sub.Name,
+                    Description = obj.Sub.Name
+                },
+                ViewItems = obj.ViewItems.Select(x => new SimpleObjectViewItem
+                {
+                    Name = x.Name,
+                    Date = x.Date,
+                    Inners = x.Inners.Select(y => new SimpleObjectViewItemInner
                     {
-                        var customerViewItem = AutoMapper.Mapper.Map<Customer, CustomerViewItem>(customer);
-                        customers.Add(customerViewItem);
-                    }
-                    return customers;
-                }, string.Format("AutoMapper with {0} elements: ", x));
-                //var manualResult = RunTimedFunction(RunManual, string.Format("Manual with {0} elements: ", x));
-
-                //CollectionAssert.AreEqual(mapperResult, manualResult);
-                CollectionAssert.AreEqual(mapperResult, autoMapperResult);
-
-                Console.WriteLine();
-                Console.WriteLine();
-            }
-        }
-
-        [TestMethod]
-        public void MapCompiledPerformanceTest()
-        {
-            Mapper.Clear();
-            //Func<CustomerSubClass, string> func = @class => @class.Name;
-            //Func<CustomerViewItem, CustomerViewItem> n = item =>
-            //    item.Apply(o => o.SubSubItem = new CustomerSubViewItem());
-
-            var map = RunTimedFunction(() =>
-            {
-                var o = Mapper.Create<Customer, CustomerViewItem>();
-                //o.RegisterGlobalMethod("f", func);
-                //o.RegisterGlobalMethod("n", n);
-                o.Remap<string>("Sub/Name", "SubName");
-                o.Remap<string>("Sub/Name", "SubSubItem/Name");
-
-                return o;
-            }, "Map initialization: ");
-
-            map = RunTimedFunction(() =>
-                map.Compile(), "Map compilation: ");
-
-            for (var x = 1; x <= PerformanceCount; x *= 10)
-            {
-                PopulateCustomers(x);
-
-                var mapperResult = RunTimedFunction(() => RunMapper(map), string.Format("Mapper with {0} elements: ", x));
-
-                var manualResult = RunTimedFunction(RunManual, string.Format("Manual with {0} elements: ", x));
-
-                CollectionAssert.AreEqual(mapperResult, manualResult);
-
-                Console.WriteLine();
-                Console.WriteLine();
-            }
-        }
-
-        [TestMethod]
-        public void MapWithNonDefaultSeparatorTest()
-        {
-            Mapper.Clear();
-
-            var map = Mapper.Create<Customer, CustomerViewItem>()
-                .ConfigMap(config => config.Separator = '.');
-
-            map.Remap<string>("Sub.Name", "SubName");
-            //map.Remap<string>("Sub.Name", "n.SubSubItem.Name");
-
-            var customer = GetCustomerFromDB();
-            var customerViewMapper = map.Do(customer);
-            var customerViewManual = new CustomerViewItem
-            {
-                FirstName = customer.FirstName,
-                LastName = customer.LastName,
-                DateOfBirth = customer.DateOfBirth,
-                NumberOfOrders = customer.NumberOfOrders,
-                SubName = customer.Sub.Name
+                        Inner = y.Inner
+                    }).ToList()
+                }).ToArray()
             };
 
-            Assert.AreEqual(customerViewMapper, customerViewManual);
-        }
-
-        [TestMethod]
-        public void ThisObjectResolver()
-        {
-            Mapper.Clear();
-            var map = Mapper.Create<Customer, CustomerSimpleViewItem3>()
-                //.ConfigMap(o => o.RegisterResolver<int, string>(r => r.ToString()))
-                //.ConfigMap(o => o.InitialyzeNullValues = false)
-                //.ConfigMap(o => o.IgnoreDefaultValues = true)
-                .Auto()
-                .Remap(o => o.Sub.Name, o => o.SubName)
-                .Remap(o => o.Sub.Name, o => o.SubDescription)
-                .Remap(o => o.Sub, o => o.SubSubItem,
-                    new Resolver<CustomerSubClass, CustomerSubViewItem>(c => new CustomerSubViewItem()))
-                //.Remap(o => o.Sub.Name, o => o.SubSubItem.Name)
-                .Remap(o => o.Sub.Name, o => o.SubSubItem.Description)
-                .RemapFrom(o => o.FirstName, c => c.FirstName + 1)
-                .Compile();
-
-            var customer = GetCustomerFromDB();
-            var customerViewMapper = map.Do(customer);
-            var customerViewManual = new CustomerSimpleViewItem3
-            {
-                FirstName = customer.FirstName + 1,
-                LastName = customer.LastName,
-                DateOfBirth = customer.DateOfBirth,
-                NumberOfOrders = customer.NumberOfOrders.ToString()
-            };
-
-            Assert.AreEqual(customerViewMapper, customerViewManual);
+            Assert.AreEqual(autoMap, manual);
+            Assert.IsTrue(autoMap.ViewItems.SequenceEqual(manual.ViewItems));
         }
     }
 }

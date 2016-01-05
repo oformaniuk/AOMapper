@@ -29,7 +29,14 @@ namespace AOMapper.Resolvers
 
                 { // should be the last one
                     new KeyValuePair<Func<Type, Type, Type, bool>, Type>(
-                        (source, destination, arg3) => arg3 == null,
+                        (source, destination, arg3) =>
+                        {
+                            bool isNull = arg3 == null;
+                            var isSourceConvertible = source.GetInterfaces().Contains(typeof (IConvertible));
+                            var isDestinationConvertible = destination.GetInterfaces().Contains(typeof(IConvertible));
+
+                            return isNull && isSourceConvertible && isDestinationConvertible;
+                        },
                         typeof (ChangeTypeResolver<,>))
                 },
             };

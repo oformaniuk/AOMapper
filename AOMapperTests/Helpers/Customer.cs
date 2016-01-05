@@ -6,7 +6,7 @@ namespace AOMapperTests.Helpers
 {
     public class Customer4 : Customer
     {
-        public Dictionary<int, DateTime> DateTimes { get; set; } 
+        public Dictionary<int, DateTime> DateTimes { get; set; }
     }
 
     public class Customer5 : Customer
@@ -16,25 +16,31 @@ namespace AOMapperTests.Helpers
         public CustomerSubClass2 SubClass2 { get; set; }
     }
 
+    public class Customer7 : Customer
+    {
+        public List<DateTime> DateTimes { get; set; }        
+    }
+
     public class Customer
     {
         public string FirstName { get; set; }
         public string LastName { get; set; }
         public DateTime DateOfBirth { get; set; }
-        public int NumberOfOrders { get; set; }        
+        public int NumberOfOrders { get; set; }
 
-        public CustomerSubClass Sub { get; set; }   
+        public CustomerSubClass Sub { get; set; }
 
         protected bool Equals(Customer other)
         {
-            return string.Equals(FirstName, other.FirstName) && string.Equals(LastName, other.LastName) && DateOfBirth.Equals(other.DateOfBirth) && NumberOfOrders == other.NumberOfOrders;
+            return string.Equals(FirstName, other.FirstName) && string.Equals(LastName, other.LastName) &&
+                   DateOfBirth.Equals(other.DateOfBirth) && NumberOfOrders == other.NumberOfOrders;
         }
 
         public override bool Equals(object obj)
         {
             if (ReferenceEquals(null, obj)) return false;
             if (ReferenceEquals(this, obj)) return true;
-            if (obj.GetType() != this.GetType()) return false;
+            if (obj.GetType() != GetType()) return false;
             return Equals((Customer) obj);
         }
 
@@ -42,10 +48,10 @@ namespace AOMapperTests.Helpers
         {
             unchecked
             {
-                var hashCode = (FirstName != null ? FirstName.GetHashCode() : 0);
+                var hashCode = FirstName != null ? FirstName.GetHashCode() : 0;
                 hashCode = (hashCode*397) ^ (LastName != null ? LastName.GetHashCode() : 0);
                 hashCode = (hashCode*397) ^ DateOfBirth.GetHashCode();
-                hashCode = (hashCode*397) ^ (Sub != null ? Sub.GetHashCode() : 0);
+                hashCode = (hashCode*397) ^ Sub.GetHashCode();
                 hashCode = (hashCode*397) ^ NumberOfOrders;
                 return hashCode;
             }
@@ -60,7 +66,7 @@ namespace AOMapperTests.Helpers
 
     public class Customer2 : Customer
     {
-        public SimpleObject[] ViewItems { get; set; } 
+        public SimpleObject[] ViewItems { get; set; }
     }
 
     public class SimpleObject
@@ -72,14 +78,15 @@ namespace AOMapperTests.Helpers
 
         protected bool Equals(SimpleObject other)
         {
-            return Id == other.Id && string.Equals(Name, other.Name) && Date.Equals(other.Date) && Inners.SequenceEqual(other.Inners);//Equals(Inners, other.Inners);
+            return Id == other.Id && string.Equals(Name, other.Name) && Date.Equals(other.Date) &&
+                   Inners.SequenceEqual(other.Inners); //Equals(Inners, other.Inners);
         }
 
         public override bool Equals(object obj)
         {
             if (ReferenceEquals(null, obj)) return false;
             if (ReferenceEquals(this, obj)) return true;
-            if (obj.GetType() != this.GetType()) return false;
+            if (obj.GetType() != GetType()) return false;
             return Equals((SimpleObject) obj);
         }
 
@@ -98,6 +105,6 @@ namespace AOMapperTests.Helpers
 
     public class SimpleObjectInner
     {
-        public string Inner {get;set;}
+        public string Inner { get; set; }
     }
 }

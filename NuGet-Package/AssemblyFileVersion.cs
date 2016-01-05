@@ -1,8 +1,8 @@
 ﻿
-#if DEV
+#if !DEPLOY && !FIX && !DEV
 using System.Reflection;
 
-[assembly: AssemblyInformationalVersion("1.0.6-dev6")]
-[assembly: AssemblyVersion("1.0.6.2")]
-[assembly: AssemblyFileVersion("1.0.6.2")]
+[assembly: AssemblyInformationalVersion("2.0.0.0")]
+[assembly: AssemblyVersion("2.0.0.0")]
+[assembly: AssemblyFileVersion("2.0.0.0")]
 #endif

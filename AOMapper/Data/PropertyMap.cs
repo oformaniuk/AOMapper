@@ -56,10 +56,10 @@ namespace AOMapper.Data
                     .Where(o => Source.ContainsProperty(o))
                     .ToArray();
 
-            AdditionalMaps.ForEach(o =>
+            foreach (var o in AdditionalMaps)
             {
                 Resolver.Create(o.Key.Type, o.Value.Type, map);
-            });
+            }            
 
             SourceNonReMapedProperties = Source
                 .Except(NonResolvedProperties)

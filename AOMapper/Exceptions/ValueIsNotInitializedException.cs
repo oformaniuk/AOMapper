@@ -44,7 +44,7 @@ namespace AOMapper.Exceptions
             return string.Format("Value '{0}' is not initialized." +
                                  "To fix this you can register global Resolver if you are generating map automatically " +
                                  "or use .Remap() overload with resolver registration for manual remapping. Also see 'InitialyzeNullValues' configuration property.",
-                path, sourceType, targetType);
+                path);
         }
 
         private void BuildException(string path, Type sourceType, Type targetType)

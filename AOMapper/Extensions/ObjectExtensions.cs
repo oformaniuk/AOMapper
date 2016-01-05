@@ -6,7 +6,7 @@ using System.Reflection;
 
 namespace AOMapper.Extensions
 {    
-    public static class ObjectExtensions
+    internal static class ObjectExtensions
     {
         /// <summary>
         /// <para>The same as to do 'object as T' but in more clear manner</para>
@@ -67,6 +67,29 @@ namespace AOMapper.Extensions
             if (body == null) throw new MissingMemberException();
 
             return body.Member.Name;
+        }
+
+        //[DebuggerStepThrough]
+        public static MethodInfo MethodInfo<T>(Expression<Action<T>> expression)
+        {
+            var body = expression.Body as MethodCallExpression;
+            if (body == null) throw new MissingMemberException();
+
+            return body.Method;
+        }
+
+        //[DebuggerStepThrough]
+        public static MethodInfo MethodInfo<T>(this T o, Expression<Action<T>> expression)
+        {
+            var body = expression.Body as MethodCallExpression;
+            if (body == null)
+#if !PORTABLE
+                throw new MissingMethodException();
+#else
+                return null;
+#endif
+
+            return body.Method;
         }
 
         [DebuggerStepThrough]
