@@ -10,8 +10,8 @@ namespace NuGet_Package
     {
         private static void Main(string[] args)
         {
-            try
-            {
+            //try
+            //{
                 var tester = new MapperTests();
                 var methods = tester.GetType().GetMethods()
                     .Where(o => o.GetCustomAttribute<TestMethodAttribute>() != null)
@@ -22,6 +22,7 @@ namespace NuGet_Package
                     try
                     {
                         method.Action();
+                        Console.WriteLine("Method: " + method.Method.Name + " OK");
                     }
                     catch (Exception e)
                     {
@@ -29,11 +30,12 @@ namespace NuGet_Package
                         throw;
                     }
                 }
-            }
-            catch
-            {
-                Environment.Exit(2);
-            }
+            //}
+            //catch
+            //{
+            //    throw;
+            //    //Environment.Exit(2);                
+            //}
         }
     }
 }

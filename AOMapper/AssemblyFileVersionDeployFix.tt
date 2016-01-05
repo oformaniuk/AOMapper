@@ -27,7 +27,7 @@
 #if FIX
 using System.Reflection;
 
-[assembly: AssemblyInformationalVersion("1.0.<#=buildNumber#>.<#=revisionNumber#>")]
-[assembly: AssemblyVersion("1.0.<#=buildNumber#>.<#=revisionNumber#>")]
-[assembly: AssemblyFileVersion("1.0.<#=buildNumber#>.<#=revisionNumber#>")]
+[assembly: AssemblyInformationalVersion("2.0.<#=buildNumber#>.<#=revisionNumber#>")]
+[assembly: AssemblyVersion("2.0.<#=buildNumber#>.<#=revisionNumber#>")]
+[assembly: AssemblyFileVersion("2.0.<#=buildNumber#>.<#=revisionNumber#>")]
 #endif

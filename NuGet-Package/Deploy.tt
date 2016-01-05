@@ -18,7 +18,7 @@
         }
     }catch
     {     
-        buildNumber = "1.0.0-dev1"; 
+        buildNumber = "2.0.0-dev1"; 
     }
 #>
 @echo off

@@ -95,6 +95,11 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>AssemblyFileVersionDeploy.tt</DependentUpon>
     </Compile>
+    <Compile Include="AssemblyFileVersionDeploy1.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>AssemblyFileVersionDeploy.tt</DependentUpon>
+    </Compile>
     <Compile Include="AssemblyFileVersionDeployDev.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>

@@ -28,7 +28,7 @@
         }
     }catch
     {     
-        buildNumber = "1.0.0-dev1"; 
+        buildNumber = "2.0.0-dev1"; 
     }
 #>
 <?xml version="1.0"?>
@@ -50,7 +50,7 @@
     <file src="**" exclude="**\*.dll;**\*.designer.cs;**\*.csproj;**\*.pdb;**\*.user;**\*.vspscc;bin\*.cs;bin\*.aspx;bin\*.config;bin\*.asax;bin\*.pubxml;**\*.nuproj;**\*.exe;**\*.number;**\**" />
 <#
     string[] type = new string[]{"dll", "XML", "pdb"};
-    int[] ver = new int[]{35, 40, 45};
+    int[] ver = new int[]{40, 45};
 
     string folder;
     using(var f = File.OpenText(Path))
